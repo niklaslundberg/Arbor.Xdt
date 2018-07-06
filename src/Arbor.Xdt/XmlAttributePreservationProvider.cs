@@ -20,22 +20,31 @@ namespace Arbor.Xdt
 
         public void Dispose()
         {
-            if (_streamReader != null)
-            {
-                _streamReader.Close();
-                _streamReader = null;
-            }
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            if (_reader != null)
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
             {
-                _reader.Dispose();
-                _reader = null;
-            }
+                if (_streamReader != null)
+                {
+                    _streamReader.Close();
+                    _streamReader = null;
+                }
 
-            if (_fileStream != null)
-            {
-                _fileStream.Dispose();
-                _fileStream = null;
+                if (_reader != null)
+                {
+                    _reader.Dispose();
+                    _reader = null;
+                }
+
+                if (_fileStream != null)
+                {
+                    _fileStream.Dispose();
+                    _fileStream = null;
+                }
             }
         }
 
@@ -74,13 +83,11 @@ namespace Arbor.Xdt
         public void Close()
         {
             Dispose();
-            GC.SuppressFinalize(this);
         }
 
         ~XmlAttributePreservationProvider()
         {
-            Dispose();
-            Debug.Fail("cal dispose please");
+            Dispose(false);
         }
     }
 }

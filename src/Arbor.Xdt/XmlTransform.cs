@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Xml;
 
 namespace Arbor.Xdt
@@ -130,7 +131,7 @@ namespace Arbor.Xdt
             {
                 if (_context.HasLineInfo)
                 {
-                    return string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    return string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_TransformNameFormatLong,
                         TransformName,
                         _context.TransformLineNumber,
@@ -141,7 +142,7 @@ namespace Arbor.Xdt
             }
         }
 
-        internal string TransformNameShort => string.Format(System.Globalization.CultureInfo.CurrentCulture,
+        internal string TransformNameShort => string.Format(CultureInfo.CurrentCulture,
             SR.XMLTRANSFORMATION_TransformNameFormatShort,
             TransformName);
 
@@ -249,7 +250,7 @@ namespace Arbor.Xdt
                 ? SR.XMLTRANSFORMATION_TransformSourceMatchWasRemoved
                 : SR.XMLTRANSFORMATION_TransformNoMatchingTargetNodes;
 
-            string message = string.Format(System.Globalization.CultureInfo.CurrentCulture,
+            string message = string.Format(CultureInfo.CurrentCulture,
                 messageFormat,
                 matchFailureContext.XPath);
             switch (MissingTargetMessage)
@@ -270,17 +271,17 @@ namespace Arbor.Xdt
 
         internal void Execute(XmlElementContext context, string argumentString)
         {
-            Debug.Assert(this._context == null && ArgumentString == null, "Don't call Execute recursively");
+            Debug.Assert(_context == null && ArgumentString == null, "Don't call Execute recursively");
             Debug.Assert(_logger == null, "Logger wasn't released from previous execution");
 
-            if (this._context == null && ArgumentString == null)
+            if (_context == null && ArgumentString == null)
             {
                 bool error = false;
                 bool startedSection = false;
 
                 try
                 {
-                    this._context = context;
+                    _context = context;
                     ArgumentString = argumentString;
                     _arguments = null;
 
@@ -339,7 +340,7 @@ namespace Arbor.Xdt
                             TransformNameLong);
                     }
 
-                    this._context = null;
+                    _context = null;
                     ArgumentString = null;
                     _arguments = null;
 

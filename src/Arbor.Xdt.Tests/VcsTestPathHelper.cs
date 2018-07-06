@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using Arbor.Aesculus.Core;
+using NCrunch.Framework;
 
 namespace Arbor.Xdt.Tests
 {
@@ -7,9 +8,9 @@ namespace Arbor.Xdt.Tests
     {
         public static string FindVcsRootPath(string baseDir = null)
         {
-            if (NCrunch.Framework.NCrunchEnvironment.NCrunchIsResident())
+            if (NCrunchEnvironment.NCrunchIsResident())
             {
-                var fileInfo = new FileInfo(NCrunch.Framework.NCrunchEnvironment.GetOriginalSolutionPath());
+                var fileInfo = new FileInfo(NCrunchEnvironment.GetOriginalSolutionPath());
 
                 return VcsPathHelper.FindVcsRootPath(fileInfo.Directory?.FullName);
             }

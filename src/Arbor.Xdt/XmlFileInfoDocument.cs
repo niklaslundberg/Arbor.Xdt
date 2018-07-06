@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -259,11 +258,10 @@ namespace Arbor.Xdt
             XmlTextReader oldReader = _reader;
             string oldFileName = FileName;
 
-            XmlNode clone = null;
+            XmlNode clone;
             try
             {
-                var lineInfo = element as IXmlLineInfo;
-                if (lineInfo != null)
+                if (element is IXmlLineInfo lineInfo)
                 {
                     _reader = new XmlTextReader(new StringReader(element.OuterXml));
 
@@ -470,7 +468,6 @@ namespace Arbor.Xdt
         ~XmlFileInfoDocument()
         {
             Dispose(false);
-            Debug.Fail("call dispose please");
         }
 
         #endregion

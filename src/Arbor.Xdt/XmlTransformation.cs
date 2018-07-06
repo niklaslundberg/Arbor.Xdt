@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Xml;
 
@@ -8,8 +9,9 @@ namespace Arbor.Xdt
 {
     public class XmlTransformation : IServiceProvider, IDisposable
     {
-        internal static readonly string TransformNamespace = "http://schemas.microsoft.com/XML-Document-Transform";
-        internal static readonly string SupressWarnings = "SupressWarnings";
+        internal const string TransformNamespace = "http://schemas.microsoft.com/XML-Document-Transform";
+
+        internal const string SupressWarnings = "SupressWarnings";
 
         public XmlTransformation(string transformFile)
             : this(transformFile, true, null)
@@ -24,7 +26,7 @@ namespace Arbor.Xdt
         public XmlTransformation(string transform, bool isTransformAFile, IXmlTransformationLogger logger)
         {
             _transformFile = transform;
-            this._logger = new XmlTransformationLogger(logger);
+            _logger = new XmlTransformationLogger(logger);
 
             _xmlTransformation = new XmlFileInfoDocument();
             if (isTransformAFile)
@@ -43,7 +45,7 @@ namespace Arbor.Xdt
 
         public XmlTransformation(Stream transformStream, IXmlTransformationLogger logger)
         {
-            this._logger = new XmlTransformationLogger(logger);
+            _logger = new XmlTransformationLogger(logger);
             _transformFile = string.Empty;
 
             _xmlTransformation = new XmlFileInfoDocument();
@@ -88,14 +90,14 @@ namespace Arbor.Xdt
 
         public bool Apply(XmlDocument xmlTarget)
         {
-            Debug.Assert(this._xmlTarget == null, "This method should not be called recursively");
+            Debug.Assert(_xmlTarget == null, "This method should not be called recursively");
 
-            if (this._xmlTarget == null)
+            if (_xmlTarget == null)
             {
                 // Reset the error state
                 _logger.HasLoggedErrors = false;
 
-                this._xmlTarget = xmlTarget;
+                _xmlTarget = xmlTarget;
                 _xmlTransformable = xmlTarget as XmlTransformableDocument;
                 try
                 {
@@ -120,7 +122,7 @@ namespace Arbor.Xdt
                 {
                     ReleaseDocumentServices();
 
-                    this._xmlTarget = null;
+                    _xmlTarget = null;
                     _xmlTransformable = null;
                 }
 
@@ -163,7 +165,15 @@ namespace Arbor.Xdt
         private void PreprocessTransformDocument()
         {
             HasTransformNamespace = false;
-            foreach (XmlAttribute attribute in _xmlTransformation.SelectNodes("//namespace::*"))
+            const string xpath = "//namespace::*";
+            XmlNodeList xmlNodeList = _xmlTransformation.SelectNodes(xpath);
+
+            if (xmlNodeList is null)
+            {
+                throw new InvalidOperationException($"Xml node list from xpath pattern {xpath} is null");
+            }
+
+            foreach (XmlAttribute attribute in xmlNodeList)
             {
                 if (attribute.Value.Equals(TransformNamespace, StringComparison.Ordinal))
                 {
@@ -178,11 +188,19 @@ namespace Arbor.Xdt
                 // and do any initialization work
                 var namespaceManager = new XmlNamespaceManager(new NameTable());
                 namespaceManager.AddNamespace("xdt", TransformNamespace);
-                XmlNodeList namespaceNodes = _xmlTransformation.SelectNodes("//xdt:*", namespaceManager);
+                string xdt = "//xdt:*";
+                XmlNodeList namespaceNodes = _xmlTransformation.SelectNodes(xdt, namespaceManager);
+
+
+                if (namespaceNodes is null)
+                {
+                    throw new InvalidOperationException($"Xml node list from xpath pattern {xdt} is null");
+                }
 
                 foreach (XmlNode node in namespaceNodes)
                 {
                     var element = node as XmlElement;
+
                     if (element == null)
                     {
                         Debug.Fail("The XPath for elements returned something that wasn't an element?");
@@ -190,6 +208,7 @@ namespace Arbor.Xdt
                     }
 
                     XmlElementContext context = null;
+
                     try
                     {
                         switch (element.LocalName)
@@ -211,6 +230,7 @@ namespace Arbor.Xdt
                         }
 
                         _logger.LogErrorFromException(ex);
+
                         throw new XmlTransformationException(SR.XMLTRANSFORMATION_FatalTransformSyntaxError, ex);
                     }
                     finally
@@ -281,7 +301,7 @@ namespace Arbor.Xdt
                 if (supressWarningsAttribute != null)
                 {
                     bool fSupressWarning = Convert.ToBoolean(supressWarningsAttribute.Value,
-                        System.Globalization.CultureInfo.InvariantCulture);
+                        CultureInfo.InvariantCulture);
                     _logger.SupressWarnings = fSupressWarning;
                 }
 
@@ -348,7 +368,7 @@ namespace Arbor.Xdt
                     }
                 }
 
-                throw new XmlNodeException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                throw new XmlNodeException(string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_ImportUnknownAttribute,
                         attribute.Name),
                     attribute);
@@ -356,21 +376,21 @@ namespace Arbor.Xdt
 
             if (assemblyName != null && path != null)
             {
-                throw new XmlNodeException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                throw new XmlNodeException(string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_ImportAttributeConflict),
                     context.Element);
             }
 
             if (assemblyName == null && path == null)
             {
-                throw new XmlNodeException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                throw new XmlNodeException(string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_ImportMissingAssembly),
                     context.Element);
             }
 
             if (nameSpace == null)
             {
-                throw new XmlNodeException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                throw new XmlNodeException(string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_ImportMissingNamespace),
                     context.Element);
             }
@@ -405,28 +425,31 @@ namespace Arbor.Xdt
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_transformationServiceContainer != null)
+            if (disposing)
             {
-                _transformationServiceContainer.Dispose();
-                _transformationServiceContainer = null;
-            }
+                if (_transformationServiceContainer != null)
+                {
+                    _transformationServiceContainer.Dispose();
+                    _transformationServiceContainer = null;
+                }
 
-            if (_documentServiceContainer != null)
-            {
-                _documentServiceContainer.Dispose();
-                _documentServiceContainer = null;
-            }
+                if (_documentServiceContainer != null)
+                {
+                    _documentServiceContainer.Dispose();
+                    _documentServiceContainer = null;
+                }
 
-            if (_xmlTransformable != null)
-            {
-                _xmlTransformable.Dispose();
-                _xmlTransformable = null;
-            }
+                if (_xmlTransformable != null)
+                {
+                    _xmlTransformable.Dispose();
+                    _xmlTransformable = null;
+                }
 
-            if (_xmlTransformation as XmlFileInfoDocument != null)
-            {
-                (_xmlTransformation as XmlFileInfoDocument).Dispose();
-                _xmlTransformation = null;
+                if (_xmlTransformation is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                    _xmlTransformation = null;
+                }
             }
         }
 
@@ -439,7 +462,6 @@ namespace Arbor.Xdt
         ~XmlTransformation()
         {
             Dispose(false);
-            Debug.Fail("call dispose please");
         }
 
         #endregion

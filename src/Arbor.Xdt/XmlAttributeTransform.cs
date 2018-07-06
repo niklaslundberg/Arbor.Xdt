@@ -63,7 +63,7 @@ namespace Arbor.Xdt
 
         private XmlNodeList GetAttributesFrom(XmlNode node, string argument, bool warnIfEmpty)
         {
-            return GetAttributesFrom(node, new string[1] { argument }, warnIfEmpty);
+            return GetAttributesFrom(node, new[] { argument }, warnIfEmpty);
         }
 
         private XmlNodeList GetAttributesFrom(XmlNode node, IList<string> arguments, bool warnIfEmpty)

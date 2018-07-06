@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace Arbor.Xdt
@@ -39,7 +41,7 @@ namespace Arbor.Xdt
             CommonErrors.WarnIfMultipleTargets(Log, TransformNameShort, TargetNodes, ApplyTransformToAllTargetNodes);
 
             XmlNode parentNode = TargetNode.ParentNode;
-            parentNode.ReplaceChild(
+            parentNode?.ReplaceChild(
                 TransformNode,
                 TargetNode);
 
@@ -61,7 +63,7 @@ namespace Arbor.Xdt
             CommonErrors.ExpectNoArguments(Log, TransformNameShort, ArgumentString);
 
             XmlNode parentNode = TargetNode.ParentNode;
-            parentNode.RemoveChild(TargetNode);
+            parentNode?.RemoveChild(TargetNode);
 
             Log.LogMessage(MessageType.Verbose, SR.XMLTRANSFORMATION_TransformMessageRemove, TargetNode.Name);
         }
@@ -128,7 +130,7 @@ namespace Arbor.Xdt
                     if (Arguments == null || Arguments.Count == 0)
                     {
                         throw new XmlTransformationException(string.Format(
-                            System.Globalization.CultureInfo.CurrentCulture,
+                            CultureInfo.CurrentCulture,
                             SR.XMLTRANSFORMATION_InsertMissingArgument,
                             GetType().Name));
                     }
@@ -136,7 +138,7 @@ namespace Arbor.Xdt
                     if (Arguments.Count > 1)
                     {
                         throw new XmlTransformationException(string.Format(
-                            System.Globalization.CultureInfo.CurrentCulture,
+                            CultureInfo.CurrentCulture,
                             SR.XMLTRANSFORMATION_InsertTooManyArguments,
                             GetType().Name));
                     }
@@ -146,7 +148,7 @@ namespace Arbor.Xdt
                     if (siblings.Count == 0)
                     {
                         throw new XmlTransformationException(string.Format(
-                            System.Globalization.CultureInfo.CurrentCulture,
+                            CultureInfo.CurrentCulture,
                             SR.XMLTRANSFORMATION_InsertBadXPath,
                             xpath));
                     }
@@ -155,7 +157,7 @@ namespace Arbor.Xdt
                     if (_siblingElement == null)
                     {
                         throw new XmlTransformationException(string.Format(
-                            System.Globalization.CultureInfo.CurrentCulture,
+                            CultureInfo.CurrentCulture,
                             SR.XMLTRANSFORMATION_InsertBadXPathResult,
                             xpath));
                     }
@@ -173,7 +175,7 @@ namespace Arbor.Xdt
             SiblingElement.ParentNode.InsertAfter(TransformNode, SiblingElement);
 
             Log.LogMessage(MessageType.Verbose,
-                string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                string.Format(CultureInfo.CurrentCulture,
                     SR.XMLTRANSFORMATION_TransformMessageInsert,
                     TransformNode.Name));
         }
@@ -186,7 +188,7 @@ namespace Arbor.Xdt
             SiblingElement.ParentNode.InsertBefore(TransformNode, SiblingElement);
 
             Log.LogMessage(MessageType.Verbose,
-                string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                string.Format(CultureInfo.CurrentCulture,
                     SR.XMLTRANSFORMATION_TransformMessageInsert,
                     TransformNode.Name));
         }
@@ -264,9 +266,9 @@ namespace Arbor.Xdt
         public static readonly string XpathLocator = "XpathLocator";
         public static readonly string XPathWithLocator = "XPathWithLocator";
 
-        private static System.Text.RegularExpressions.Regex _sDirRegex;
-        private static System.Text.RegularExpressions.Regex _sParentAttribRegex;
-        private static System.Text.RegularExpressions.Regex _sTokenFormatRegex;
+        private static Regex _sDirRegex;
+        private static Regex _sParentAttribRegex;
+        private static Regex _sTokenFormatRegex;
         private bool _fInitStorageDictionary;
 
         private SetTokenizedAttributeStorage _storageDictionary;
@@ -288,13 +290,13 @@ namespace Arbor.Xdt
         }
 
         // Directory registrory
-        internal static System.Text.RegularExpressions.Regex DirRegex
+        internal static Regex DirRegex
         {
             get
             {
                 if (_sDirRegex == null)
                 {
-                    _sDirRegex = new System.Text.RegularExpressions.Regex(
+                    _sDirRegex = new Regex(
                         @"\G\{%(\s*(?<attrname>\w+(?=\W))(\s*(?<equal>=)\s*'(?<attrval>[^']*)'|\s*(?<equal>=)\s*(?<attrval>[^\s%>]*)|(?<equal>)(?<attrval>\s*?)))*\s*?%\}");
                 }
 
@@ -302,26 +304,26 @@ namespace Arbor.Xdt
             }
         }
 
-        internal static System.Text.RegularExpressions.Regex ParentAttributeRegex
+        internal static Regex ParentAttributeRegex
         {
             get
             {
                 if (_sParentAttribRegex == null)
                 {
-                    _sParentAttribRegex = new System.Text.RegularExpressions.Regex(@"\G\$\((?<tagname>[\w:\.]+)\)");
+                    _sParentAttribRegex = new Regex(@"\G\$\((?<tagname>[\w:\.]+)\)");
                 }
 
                 return _sParentAttribRegex;
             }
         }
 
-        internal static System.Text.RegularExpressions.Regex TokenFormatRegex
+        internal static Regex TokenFormatRegex
         {
             get
             {
                 if (_sTokenFormatRegex == null)
                 {
-                    _sTokenFormatRegex = new System.Text.RegularExpressions.Regex(@"\G\#\((?<tagname>[\w:\.]+)\)");
+                    _sTokenFormatRegex = new Regex(@"\G\#\((?<tagname>[\w:\.]+)\)");
                 }
 
                 return _sTokenFormatRegex;
@@ -413,7 +415,7 @@ namespace Arbor.Xdt
 
         protected static string SubstituteKownValue(
             string transformValue,
-            System.Text.RegularExpressions.Regex patternRegex,
+            Regex patternRegex,
             string patternPrefix,
             GetValueCallback getValueDelegate)
         {
@@ -447,7 +449,7 @@ namespace Arbor.Xdt
                 foreach (System.Text.RegularExpressions.Match match in matchsExpr)
                 {
                     strbuilder.Append(transformValue.Substring(position, match.Index - position));
-                    System.Text.RegularExpressions.Capture captureTagName = match.Groups["tagname"];
+                    Capture captureTagName = match.Groups["tagname"];
                     string attributeName = captureTagName.Value;
 
                     string newValue = getValueDelegate(attributeName);
@@ -500,7 +502,7 @@ namespace Arbor.Xdt
                                     identifier.Append(" and ");
                                 }
 
-                                identifier.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                                identifier.Append(string.Format(CultureInfo.InvariantCulture,
                                     "@{0}='{1}'",
                                     match,
                                     val));
@@ -508,7 +510,7 @@ namespace Arbor.Xdt
                             else
                             {
                                 throw new XmlTransformationException(string.Format(
-                                    System.Globalization.CultureInfo.CurrentCulture,
+                                    CultureInfo.CurrentCulture,
                                     SR.XMLTRANSFORMATION_MatchAttributeDoesNotExist,
                                     match));
                             }
@@ -522,7 +524,7 @@ namespace Arbor.Xdt
                             if (TargetNodes[i] == xmlAttribute.OwnerElement)
                             {
                                 // Xpath is 1 based
-                                identifier.Append((i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                                identifier.Append((i + 1).ToString(CultureInfo.InvariantCulture));
                                 break;
                             }
                         }
@@ -564,10 +566,10 @@ namespace Arbor.Xdt
             transformValue = SubstituteKownValue(transformValue,
                 ParentAttributeRegex,
                 "$(",
-                delegate(string key) { return EscapeDirRegexSpecialCharacter(GetAttributeValue(key), true); });
+                key => EscapeDirRegexSpecialCharacter(GetAttributeValue(key), true));
 
             // then use the directive to parse the value. --- if TokenizeParameterize is enable
-            if (fTokenizeParameter && parameters != null)
+            if (fTokenizeParameter)
             {
                 int position = 0;
                 var strbuilder = new StringBuilder(transformValue.Length);
@@ -602,23 +604,23 @@ namespace Arbor.Xdt
                     foreach (System.Text.RegularExpressions.Match match in matchs)
                     {
                         strbuilder.Append(transformValue.Substring(position, match.Index - position));
-                        System.Text.RegularExpressions.CaptureCollection attrnames = match.Groups["attrname"].Captures;
-                        if (attrnames != null && attrnames.Count > 0)
+                        CaptureCollection attrnames = match.Groups["attrname"].Captures;
+                        if (attrnames.Count > 0)
                         {
-                            System.Text.RegularExpressions.CaptureCollection attrvalues =
+                            CaptureCollection attrvalues =
                                 match.Groups["attrval"].Captures;
                             var paramDictionary = new Dictionary<string, string>(4, StringComparer.OrdinalIgnoreCase);
 
                             paramDictionary[XPathWithIndex] = xpath;
                             paramDictionary[TokenNumber] =
-                                index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                                index.ToString(CultureInfo.InvariantCulture);
 
                             // Get the key-value pare of the in the tranform form
                             for (int i = 0; i < attrnames.Count; i++)
                             {
                                 string name = attrnames[i].Value;
                                 string val = null;
-                                if (attrvalues != null && i < attrvalues.Count)
+                                if (i < attrvalues.Count)
                                 {
                                     val = EscapeDirRegexSpecialCharacter(attrvalues[i].Value, false);
                                 }

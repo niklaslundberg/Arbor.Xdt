@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Xml;
 
 namespace Arbor.Xdt
@@ -116,7 +117,7 @@ namespace Arbor.Xdt
         {
             if (Arguments == null || Arguments.Count < min)
             {
-                throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                throw new XmlTransformationException(string.Format(CultureInfo.CurrentCulture,
                     SR.XMLTRANSFORMATION_RequiresMinimumArguments,
                     GetType().Name,
                     min));
@@ -130,7 +131,7 @@ namespace Arbor.Xdt
             {
                 if (Arguments == null || Arguments.Count != min)
                 {
-                    throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    throw new XmlTransformationException(string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_RequiresExactArguments,
                         GetType().Name,
                         min));
@@ -141,7 +142,7 @@ namespace Arbor.Xdt
 
             if (Arguments.Count > max)
             {
-                throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                throw new XmlTransformationException(string.Format(CultureInfo.CurrentCulture,
                     SR.XMLTRANSFORMATION_TooManyArguments,
                     GetType().Name));
             }
@@ -220,25 +221,25 @@ namespace Arbor.Xdt
 
         internal string ConstructPath(string parentPath, XmlElementContext context, string argumentString)
         {
-            Debug.Assert(this._parentPath == null && this._context == null && ArgumentString == null,
+            Debug.Assert(_parentPath == null && _context == null && ArgumentString == null,
                 "Do not call ConstructPath recursively");
 
             string resultPath = string.Empty;
 
-            if (this._parentPath == null && this._context == null && ArgumentString == null)
+            if (_parentPath == null && _context == null && ArgumentString == null)
             {
                 try
                 {
-                    this._parentPath = parentPath;
-                    this._context = context;
+                    _parentPath = parentPath;
+                    _context = context;
                     ArgumentString = argumentString;
 
                     resultPath = ConstructPath();
                 }
                 finally
                 {
-                    this._parentPath = null;
-                    this._context = null;
+                    _parentPath = null;
+                    _context = null;
                     ArgumentString = null;
                     _arguments = null;
 
@@ -251,25 +252,25 @@ namespace Arbor.Xdt
 
         internal string ConstructParentPath(string parentPath, XmlElementContext context, string argumentString)
         {
-            Debug.Assert(this._parentPath == null && this._context == null && ArgumentString == null,
+            Debug.Assert(_parentPath == null && _context == null && ArgumentString == null,
                 "Do not call ConstructPath recursively");
 
             string resultPath = string.Empty;
 
-            if (this._parentPath == null && this._context == null && ArgumentString == null)
+            if (_parentPath == null && _context == null && ArgumentString == null)
             {
                 try
                 {
-                    this._parentPath = parentPath;
-                    this._context = context;
+                    _parentPath = parentPath;
+                    _context = context;
                     ArgumentString = argumentString;
 
                     resultPath = ParentPath;
                 }
                 finally
                 {
-                    this._parentPath = null;
-                    this._context = null;
+                    _parentPath = null;
+                    _context = null;
                     ArgumentString = null;
                     _arguments = null;
 

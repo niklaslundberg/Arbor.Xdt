@@ -23,12 +23,12 @@ namespace Arbor.Xdt
 
         private LinkedList<string> _indents = new LinkedList<string>();
         private string _oneTab;
-        private string _originalFileName;
+        public string OriginalFileName { get; }
 
         private XmlFormatter(XmlFileInfoDocument document)
         {
-            this._document = document;
-            _originalFileName = document.FileName;
+            _document = document;
+            OriginalFileName = document.FileName;
         }
 
         private XmlNode CurrentNode
@@ -207,9 +207,6 @@ namespace Arbor.Xdt
                                 }
 
                                 break;
-                            default:
-                                // Anything else stops the loop
-                                break;
                         }
 
                         break;
@@ -349,7 +346,7 @@ namespace Arbor.Xdt
 
         private void SetIndent(string indent)
         {
-            if (_currentIndent == null || !_currentIndent.Equals(indent))
+            if (_currentIndent == null || !_currentIndent.Equals(indent, StringComparison.Ordinal))
             {
                 _currentIndent = indent;
 

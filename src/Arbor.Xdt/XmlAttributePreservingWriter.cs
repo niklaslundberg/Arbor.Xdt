@@ -24,8 +24,8 @@ namespace Arbor.Xdt
 
         public XmlAttributePreservingWriter(TextWriter textWriter)
         {
-            this._textWriter = new AttributeTextWriter(textWriter);
-            _xmlWriter = new XmlTextWriter(this._textWriter);
+            _textWriter = new AttributeTextWriter(textWriter);
+            _xmlWriter = new XmlTextWriter(_textWriter);
         }
 
         public void WriteAttributeWhitespace(string whitespace)
@@ -103,7 +103,7 @@ namespace Arbor.Xdt
             public AttributeTextWriter(TextWriter baseWriter)
                 : base(CultureInfo.InvariantCulture)
             {
-                this._baseWriter = baseWriter;
+                _baseWriter = baseWriter;
             }
 
             public string AttributeLeadingWhitespace

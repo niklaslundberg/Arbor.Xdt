@@ -37,6 +37,7 @@ namespace Arbor.Xdt
         {
             string uri;
             var errorInfoDocument = xmlDocument as XmlFileInfoDocument;
+
             if (errorInfoDocument != null)
             {
                 uri = errorInfoDocument.FileName;
@@ -73,8 +74,7 @@ namespace Arbor.Xdt
 
             if (_externalLogger != null)
             {
-                var nodeException = ex as XmlNodeException;
-                if (nodeException != null && nodeException.HasErrorInfo)
+                if (ex is XmlNodeException nodeException && nodeException.HasErrorInfo)
                 {
                     _externalLogger.LogErrorFromException(
                         nodeException,
@@ -154,9 +154,8 @@ namespace Arbor.Xdt
                 if (_externalLogger != null)
                 {
                     string fileName = ConvertUriToFileName(referenceNode.OwnerDocument);
-                    var lineInfo = referenceNode as IXmlLineInfo;
 
-                    if (lineInfo != null)
+                    if (referenceNode is IXmlLineInfo lineInfo)
                     {
                         _externalLogger.LogWarning(
                             fileName,

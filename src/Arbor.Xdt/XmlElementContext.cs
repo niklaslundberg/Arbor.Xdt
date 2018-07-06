@@ -18,7 +18,7 @@ namespace Arbor.Xdt
         {
             _parentContext = parent;
             TargetDocument = xmlTargetDoc;
-            this._serviceProvider = serviceProvider;
+            _serviceProvider = serviceProvider;
         }
 
         public T GetService<T>() where T : class
@@ -259,7 +259,7 @@ namespace Arbor.Xdt
                     {
                         attributesToRemove.Add(attribute);
                     }
-                    else if (attribute.Prefix.Equals("xmlns") || attribute.Name.Equals("xmlns"))
+                    else if (attribute.Prefix.Equals("xmlns", StringComparison.Ordinal) || attribute.Name.Equals("xmlns", StringComparison.Ordinal))
                     {
                         attributesToRemove.Add(attribute);
                     }
@@ -285,7 +285,7 @@ namespace Arbor.Xdt
         private XmlNodeList GetTargetNodes(string xpath)
         {
             XmlNamespaceManager mgr = GetNamespaceManager();
-            return TargetDocument.SelectNodes(xpath, GetNamespaceManager());
+            return TargetDocument.SelectNodes(xpath, mgr);
         }
 
         private Exception WrapException(Exception ex)

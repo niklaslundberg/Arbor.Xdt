@@ -33,27 +33,27 @@ namespace Arbor.Xdt
 
         public bool ReadToPosition(int lineNumber, int linePosition)
         {
-            while (this._lineNumber < lineNumber && Peek() != -1)
+            while (_lineNumber < lineNumber && Peek() != -1)
             {
                 ReadLine();
             }
 
-            while (this._linePosition < linePosition && Peek() != -1)
+            while (_linePosition < linePosition && Peek() != -1)
             {
                 Read();
             }
 
-            return this._lineNumber == lineNumber && this._linePosition == linePosition;
+            return _lineNumber == lineNumber && _linePosition == linePosition;
         }
 
         public bool ReadToPosition(int characterPosition)
         {
-            while (this._characterPosition < characterPosition && Peek() != -1)
+            while (_characterPosition < characterPosition && Peek() != -1)
             {
                 Read();
             }
 
-            return this._characterPosition == characterPosition;
+            return _characterPosition == characterPosition;
         }
 
         private void UpdatePosition(int character)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 
@@ -12,7 +13,7 @@ namespace Arbor.Xdt
 
         internal NamedTypeFactory(string relativePathRoot)
         {
-            this._relativePathRoot = relativePathRoot;
+            _relativePathRoot = relativePathRoot;
 
             CreateDefaultRegistrations();
         }
@@ -39,7 +40,7 @@ namespace Arbor.Xdt
                         else
                         {
                             throw new XmlTransformationException(string.Format(
-                                System.Globalization.CultureInfo.CurrentCulture,
+                                CultureInfo.CurrentCulture,
                                 SR.XMLTRANSFORMATION_AmbiguousTypeMatch,
                                 typeName));
                         }
@@ -78,7 +79,7 @@ namespace Arbor.Xdt
                 Type type = GetType(typeName);
                 if (type == null)
                 {
-                    throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    throw new XmlTransformationException(string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_UnknownTypeName,
                         typeName,
                         typeof(TObjectType).Name));
@@ -86,7 +87,7 @@ namespace Arbor.Xdt
 
                 if (!type.IsSubclassOf(typeof(TObjectType)))
                 {
-                    throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    throw new XmlTransformationException(string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_IncorrectBaseType,
                         type.FullName,
                         typeof(TObjectType).Name));
@@ -95,7 +96,7 @@ namespace Arbor.Xdt
                 ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
                 if (constructor == null)
                 {
-                    throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    throw new XmlTransformationException(string.Format(CultureInfo.CurrentCulture,
                         SR.XMLTRANSFORMATION_NoValidConstructor,
                         type.FullName));
                 }

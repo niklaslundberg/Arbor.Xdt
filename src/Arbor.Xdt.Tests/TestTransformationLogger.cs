@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace Arbor.Xdt.Tests
@@ -75,7 +76,7 @@ namespace Arbor.Xdt.Tests
             string format = "{0} ({1}, {2}) warning: {3}";
             _log.AppendLine(string.Format(CultureInfo.InvariantCulture,
                 format,
-                System.IO.Path.GetFileName(file),
+                Path.GetFileName(file),
                 lineNumber,
                 linePosition,
                 string.Format(CultureInfo.InvariantCulture, message, messageArgs)));
@@ -98,10 +99,10 @@ namespace Arbor.Xdt.Tests
             _log.AppendLine(string.Format(
                 CultureInfo.InvariantCulture,
                 format,
-                System.IO.Path.GetFileName(file),
+                Path.GetFileName(file),
                 lineNumber,
                 linePosition,
-                string.Format(message, messageArgs)));
+                string.Format(CultureInfo.InvariantCulture, message, messageArgs)));
         }
 
         public void LogErrorFromException(Exception ex)
