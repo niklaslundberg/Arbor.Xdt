@@ -9,8 +9,8 @@ namespace Arbor.Xdt
 {
     internal class XmlAttributePreservingWriter : XmlWriter
     {
-        private AttributeTextWriter _textWriter;
-        private XmlTextWriter _xmlWriter;
+        private readonly AttributeTextWriter _textWriter;
+        private readonly XmlTextWriter _xmlWriter;
 
         public XmlAttributePreservingWriter(string fileName, Encoding encoding)
             : this(encoding == null ? new StreamWriter(fileName) : new StreamWriter(fileName, false, encoding))
@@ -83,7 +83,7 @@ namespace Arbor.Xdt
             return old;
         }
 
-        private bool IsOnlyWhitespace(string whitespace)
+        private static bool IsOnlyWhitespace(string whitespace)
         {
             foreach (char whitespaceCharacter in whitespace)
             {
@@ -225,7 +225,7 @@ namespace Arbor.Xdt
                 }
             }
 
-            private bool StateRequiresBuffer(State state)
+            private static bool StateRequiresBuffer(State state)
             {
                 return state == State.Buffering || state == State.ReadingAttribute;
             }
@@ -313,7 +313,7 @@ namespace Arbor.Xdt
             private State _state = State.Writing;
             private StringBuilder _writeBuffer;
 
-            private TextWriter _baseWriter;
+            private readonly TextWriter _baseWriter;
             private string _leadingWhitespace;
 
             private int _lineNumber = 1;

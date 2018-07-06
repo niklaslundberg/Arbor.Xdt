@@ -36,7 +36,7 @@ namespace Arbor.Xdt
                     return false;
                 }
 
-                return !IsXmlEqual(_xmlOriginal, this);
+                return !IsXmlEqual();
             }
         }
 
@@ -52,7 +52,7 @@ namespace Arbor.Xdt
             }
         }
 
-        internal void OnAfterChange()
+        internal static void OnAfterChange()
         {
         }
 
@@ -65,7 +65,7 @@ namespace Arbor.Xdt
             _xmlOriginal = (XmlDocument)Clone();
         }
 
-        private static bool IsXmlEqual(XmlDocument xmlOriginal, XmlDocument xmlTransformed)
+        private static bool IsXmlEqual()
         {
             // FUTURE: Write a comparison algorithm to see if xmlLeft and
             // xmlRight are different in any significant way. Until then,

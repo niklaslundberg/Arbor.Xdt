@@ -8,8 +8,8 @@ namespace Arbor.Xdt
 {
     internal class NamedTypeFactory
     {
-        private List<Registration> _registrations = new List<Registration>();
-        private string _relativePathRoot;
+        private readonly List<Registration> _registrations = new List<Registration>();
+        private readonly string _relativePathRoot;
 
         internal NamedTypeFactory(string relativePathRoot)
         {

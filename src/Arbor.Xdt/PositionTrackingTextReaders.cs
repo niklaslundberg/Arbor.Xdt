@@ -7,7 +7,7 @@ namespace Arbor.Xdt
     {
         private const int NewlineCharacter = '\n';
         private int _characterPosition = 1;
-        private TextReader _internalReader;
+        private readonly TextReader _internalReader;
 
         private int _lineNumber = 1;
         private int _linePosition = 1;

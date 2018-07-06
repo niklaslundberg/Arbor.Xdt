@@ -37,11 +37,11 @@ namespace Arbor.Xdt
 
         #region private data members
 
-        private XmlElementContext _parentContext;
+        private readonly XmlElementContext _parentContext;
         private string _xpath;
         private string _parentXPath;
 
-        private IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
         private XmlNode _transformNodes;
         private XmlNodeList _targetNodes;
@@ -58,31 +58,9 @@ namespace Arbor.Xdt
 
         public XmlElement Element => Node as XmlElement;
 
-        public string XPath
-        {
-            get
-            {
-                if (_xpath == null)
-                {
-                    _xpath = ConstructXPath();
-                }
+        public string XPath => _xpath ?? (_xpath = ConstructXPath());
 
-                return _xpath;
-            }
-        }
-
-        public string ParentXPath
-        {
-            get
-            {
-                if (_parentXPath == null)
-                {
-                    _parentXPath = ConstructParentXPath();
-                }
-
-                return _parentXPath;
-            }
-        }
+        public string ParentXPath => _parentXPath ?? (_parentXPath = ConstructParentXPath());
 
         public Transform ConstructTransform(out string argumentString)
         {
@@ -100,8 +78,7 @@ namespace Arbor.Xdt
         {
             get
             {
-                var lineInfo = _transformAttribute as IXmlLineInfo;
-                if (lineInfo != null)
+                if (_transformAttribute is IXmlLineInfo lineInfo)
                 {
                     return lineInfo.LineNumber;
                 }
@@ -114,8 +91,7 @@ namespace Arbor.Xdt
         {
             get
             {
-                var lineInfo = _transformAttribute as IXmlLineInfo;
-                if (lineInfo != null)
+                if (_transformAttribute is IXmlLineInfo lineInfo)
                 {
                     return lineInfo.LinePosition;
                 }
@@ -136,10 +112,9 @@ namespace Arbor.Xdt
         {
             try
             {
-                string argumentString;
                 string parentPath = _parentContext == null ? string.Empty : _parentContext.XPath;
 
-                Locator locator = CreateLocator(out argumentString);
+                Locator locator = CreateLocator(out string argumentString);
 
                 return locator.ConstructPath(parentPath, this, argumentString);
             }
@@ -153,10 +128,9 @@ namespace Arbor.Xdt
         {
             try
             {
-                string argumentString;
                 string parentPath = _parentContext == null ? string.Empty : _parentContext.XPath;
 
-                Locator locator = CreateLocator(out argumentString);
+                Locator locator = CreateLocator(out string argumentString);
 
                 return locator.ConstructParentPath(parentPath, this, argumentString);
             }
@@ -183,31 +157,9 @@ namespace Arbor.Xdt
 
         #region Context information
 
-        internal XmlNode TransformNode
-        {
-            get
-            {
-                if (_transformNodes == null)
-                {
-                    _transformNodes = CreateCloneInTargetDocument(Element);
-                }
+        internal XmlNode TransformNode => _transformNodes ?? (_transformNodes = CreateCloneInTargetDocument(Element));
 
-                return _transformNodes;
-            }
-        }
-
-        internal XmlNodeList TargetNodes
-        {
-            get
-            {
-                if (_targetNodes == null)
-                {
-                    _targetNodes = GetTargetNodes(XPath);
-                }
-
-                return _targetNodes;
-            }
-        }
+        internal XmlNodeList TargetNodes => _targetNodes ?? (_targetNodes = GetTargetNodes(XPath));
 
         internal XmlNodeList TargetParents
         {
@@ -230,10 +182,9 @@ namespace Arbor.Xdt
 
         private XmlNode CreateCloneInTargetDocument(XmlNode sourceNode)
         {
-            var infoDocument = TargetDocument as XmlFileInfoDocument;
             XmlNode clonedNode;
 
-            if (infoDocument != null)
+            if (TargetDocument is XmlFileInfoDocument infoDocument)
             {
                 clonedNode = infoDocument.CloneNodeFromOtherDocument(sourceNode);
             }
@@ -293,7 +244,7 @@ namespace Arbor.Xdt
             return XmlNodeException.Wrap(ex, Element);
         }
 
-        private Exception WrapException(Exception ex, XmlNode node)
+        private static Exception WrapException(Exception ex, XmlNode node)
         {
             return XmlNodeException.Wrap(ex, node);
         }
@@ -349,17 +300,11 @@ namespace Arbor.Xdt
 
         private static Regex _nameAndArgumentsRegex;
 
-        private static Regex NameAndArgumentsRegex
-        {
-            get
-            {
-                return _nameAndArgumentsRegex ?? (_nameAndArgumentsRegex = new Regex(
-                           @"\A\s*(?<name>\w+)(\s*\((?<arguments>.*)\))?\s*\Z",
-                           RegexOptions.Compiled | RegexOptions.Singleline));
-            }
-        }
+        private static Regex NameAndArgumentsRegex => _nameAndArgumentsRegex ?? (_nameAndArgumentsRegex = new Regex(
+                                                          @"\A\s*(?<name>\w+)(\s*\((?<arguments>.*)\))?\s*\Z",
+                                                          RegexOptions.Compiled | RegexOptions.Singleline));
 
-        private string ParseNameAndArguments(string name, out string arguments)
+        private static string ParseNameAndArguments(string name, out string arguments)
         {
             arguments = null;
 
@@ -386,8 +331,8 @@ namespace Arbor.Xdt
             out XmlAttribute objectAttribute) where TObjectType : class
         {
             objectAttribute =
-                Element.Attributes.GetNamedItem(typeof(TObjectType).Name, XmlTransformation.TransformNamespace) as
-                    XmlAttribute;
+                Element.Attributes.GetNamedItem(typeof(TObjectType).Name, XmlTransformation.TransformNamespace)
+                    as XmlAttribute;
             try
             {
                 if (objectAttribute != null)
@@ -421,8 +366,7 @@ namespace Arbor.Xdt
             if (TargetNodes.Count == 0)
             {
                 failedContext = this;
-                while (failedContext._parentContext != null &&
-                       failedContext._parentContext.TargetNodes.Count == 0)
+                while (failedContext._parentContext?.TargetNodes.Count == 0)
                 {
                     failedContext = failedContext._parentContext;
                 }
@@ -442,9 +386,9 @@ namespace Arbor.Xdt
             if (TargetParents.Count == 0)
             {
                 failedContext = this;
-                while (failedContext._parentContext != null &&
-                       !string.IsNullOrEmpty(failedContext._parentContext.ParentXPath) &&
-                       failedContext._parentContext.TargetParents.Count == 0)
+                while (failedContext._parentContext != null
+                       && !string.IsNullOrEmpty(failedContext._parentContext.ParentXPath)
+                       && failedContext._parentContext.TargetParents.Count == 0)
                 {
                     failedContext = failedContext._parentContext;
                 }
@@ -462,7 +406,7 @@ namespace Arbor.Xdt
             if (service != null)
             {
                 XmlNodeList nodeList = service.SelectNodes(xpath, GetNamespaceManager());
-                if (nodeList != null && nodeList.Count > 0)
+                if (nodeList?.Count > 0)
                 {
                     return true;
                 }

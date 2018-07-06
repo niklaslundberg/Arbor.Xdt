@@ -24,12 +24,7 @@ namespace Arbor.Xdt
 
         public string GetAttributeNewLineString(XmlFormatter formatter)
         {
-            if (_attributeNewLineString == null)
-            {
-                _attributeNewLineString = ComputeAttributeNewLineString(formatter);
-            }
-
-            return _attributeNewLineString;
+            return _attributeNewLineString ?? (_attributeNewLineString = ComputeAttributeNewLineString(formatter));
         }
 
         private int EnumerateAttributes(string elementStartTag, Action<int, int, string> onAttributeSpotted)
@@ -41,9 +36,8 @@ namespace Arbor.Xdt
                 xmlDocString = elementStartTag.Substring(0, elementStartTag.Length - 1) + "/>";
             }
 
-            var xmlReader = new XmlTextReader(new StringReader(xmlDocString));
+            var xmlReader = new XmlTextReader(new StringReader(xmlDocString)) { Namespaces = false };
 
-            xmlReader.Namespaces = false;
             xmlReader.Read();
 
             bool hasMoreAttributes = xmlReader.MoveToFirstAttribute();
@@ -78,8 +72,8 @@ namespace Arbor.Xdt
                     {
                         firstAttribute = false;
                     }
-                    else if (_leadingSpaces.ContainsKey(attributeName) &&
-                             !ContainsNewLine(_leadingSpaces[attributeName]))
+                    else if (_leadingSpaces.ContainsKey(attributeName)
+                             && !ContainsNewLine(_leadingSpaces[attributeName]))
                     {
                         // This means there are two attributes on one line
                         return false;
@@ -96,7 +90,7 @@ namespace Arbor.Xdt
             return false;
         }
 
-        private bool ContainsNewLine(string space)
+        private static bool ContainsNewLine(string space)
         {
             return space.IndexOf("\n", StringComparison.Ordinal) >= 0;
         }
@@ -138,8 +132,8 @@ namespace Arbor.Xdt
         internal void ReadPreservationInfo(string elementStartTag)
         {
             Debug.Assert(
-                elementStartTag.StartsWith("<", StringComparison.Ordinal) &&
-                elementStartTag.EndsWith(">", StringComparison.Ordinal),
+                elementStartTag.StartsWith("<", StringComparison.Ordinal)
+                && elementStartTag.EndsWith(">", StringComparison.Ordinal),
                 "Expected string containing exactly a single tag");
             var whitespaceReader = new WhitespaceTrackingTextReader(new StringReader(elementStartTag));
 
@@ -257,7 +251,7 @@ namespace Arbor.Xdt
                         //      keep the last one.
                         //   3. Otherwise, remove leading space.
                         //
-                        // In order to remove trailing space, we have to 
+                        // In order to remove trailing space, we have to
                         // remove the leading space of the next attribute, so
                         // we store this leading space to replace the next.
                         if (_leadingSpaces.ContainsKey(key))
@@ -278,7 +272,6 @@ namespace Arbor.Xdt
                             _leadingSpaces.Remove(key);
                         }
                     }
-
                     else if (keepLeadingWhitespace != null)
                     {
                         // Exception to rule #2 above: Don't replace an existing
@@ -324,8 +317,8 @@ namespace Arbor.Xdt
 
         #region Private data members
 
-        private List<string> _orderedAttributes = new List<string>();
-        private Dictionary<string, string> _leadingSpaces = new Dictionary<string, string>();
+        private readonly List<string> _orderedAttributes = new List<string>();
+        private readonly Dictionary<string, string> _leadingSpaces = new Dictionary<string, string>();
 
         private string _attributeNewLineString;
         private bool _computedOneAttributePerLine;

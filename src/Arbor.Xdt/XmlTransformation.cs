@@ -188,9 +188,8 @@ namespace Arbor.Xdt
                 // and do any initialization work
                 var namespaceManager = new XmlNamespaceManager(new NameTable());
                 namespaceManager.AddNamespace("xdt", TransformNamespace);
-                string xdt = "//xdt:*";
+                const string xdt = "//xdt:*";
                 XmlNodeList namespaceNodes = _xmlTransformation.SelectNodes(xdt, namespaceManager);
-
 
                 if (namespaceNodes is null)
                 {
@@ -199,9 +198,7 @@ namespace Arbor.Xdt
 
                 foreach (XmlNode node in namespaceNodes)
                 {
-                    var element = node as XmlElement;
-
-                    if (element == null)
+                    if (!(node is XmlElement element))
                     {
                         Debug.Fail("The XPath for elements returned something that wasn't an element?");
                         continue;
@@ -250,8 +247,7 @@ namespace Arbor.Xdt
         {
             foreach (XmlNode node in parentContext.Node.ChildNodes)
             {
-                var element = node as XmlElement;
-                if (element == null)
+                if (!(node is XmlElement element))
                 {
                     continue;
                 }
@@ -283,22 +279,19 @@ namespace Arbor.Xdt
             HandleException(WrapException(ex, context));
         }
 
-        private Exception WrapException(Exception ex, XmlNodeContext context)
+        private static Exception WrapException(Exception ex, XmlNodeContext context)
         {
             return XmlNodeException.Wrap(ex, context.Node);
         }
 
         private void HandleElement(XmlElementContext context)
         {
-            string argumentString;
-            Transform transform = context.ConstructTransform(out argumentString);
+            Transform transform = context.ConstructTransform(out string argumentString);
             if (transform != null)
             {
                 bool fOriginalSupressWarning = _logger.SupressWarnings;
 
-                var supressWarningsAttribute =
-                    context.Element.Attributes.GetNamedItem(SupressWarnings, TransformNamespace) as XmlAttribute;
-                if (supressWarningsAttribute != null)
+                if (context.Element.Attributes.GetNamedItem(SupressWarnings, TransformNamespace) is XmlAttribute supressWarningsAttribute)
                 {
                     bool fSupressWarning = Convert.ToBoolean(supressWarningsAttribute.Value,
                         CultureInfo.InvariantCulture);
@@ -330,18 +323,12 @@ namespace Arbor.Xdt
 
         private void OnApplyingTransform()
         {
-            if (_xmlTransformable != null)
-            {
-                _xmlTransformable.OnBeforeChange();
-            }
+            _xmlTransformable?.OnBeforeChange();
         }
 
-        private void OnAppliedTransform()
+        private static void OnAppliedTransform()
         {
-            if (_xmlTransformable != null)
-            {
-                _xmlTransformable.OnAfterChange();
-            }
+            XmlTransformableDocument.OnAfterChange();
         }
 
         private void PreprocessImportElement(XmlElementContext context)
@@ -407,13 +394,13 @@ namespace Arbor.Xdt
 
         #region private data members
 
-        private string _transformFile;
+        private readonly string _transformFile;
 
         private XmlDocument _xmlTransformation;
         private XmlDocument _xmlTarget;
         private XmlTransformableDocument _xmlTransformable;
 
-        private XmlTransformationLogger _logger;
+        private readonly XmlTransformationLogger _logger;
 
         private NamedTypeFactory _namedTypeFactory;
         private ServiceContainer _transformationServiceContainer = new ServiceContainer();

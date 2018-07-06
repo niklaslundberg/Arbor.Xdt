@@ -150,7 +150,7 @@ namespace Arbor.Xdt.Tests
             CompareMultiLines(expectedLog, logger.LogText);
         }
 
-        private void CompareFiles(string baseLinePath, string resultPath)
+        private static void CompareFiles(string baseLinePath, string resultPath)
         {
             string bsl;
             using (var sr = new StreamReader(baseLinePath))
@@ -167,7 +167,7 @@ namespace Arbor.Xdt.Tests
             CompareMultiLines(bsl, result);
         }
 
-        private void CompareMultiLines(string baseline, string result)
+        private static void CompareMultiLines(string baseline, string result)
         {
             string[] baseLines = baseline.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             string[] resultLines = result.Split(new[] { Environment.NewLine }, StringSplitOptions.None);

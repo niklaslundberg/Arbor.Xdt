@@ -23,8 +23,7 @@ namespace Arbor.Xdt
         {
             get
             {
-                var lineInfo = Node as IXmlLineInfo;
-                if (lineInfo != null)
+                if (Node is IXmlLineInfo lineInfo)
                 {
                     return lineInfo.LineNumber;
                 }
@@ -37,8 +36,7 @@ namespace Arbor.Xdt
         {
             get
             {
-                var lineInfo = Node as IXmlLineInfo;
-                if (lineInfo != null)
+                if (Node is IXmlLineInfo lineInfo)
                 {
                     return lineInfo.LinePosition;
                 }

@@ -10,18 +10,7 @@ namespace Arbor.Xdt
 
         private static DefaultLocator _instance;
 
-        internal static DefaultLocator Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new DefaultLocator();
-                }
-
-                return _instance;
-            }
-        }
+        internal static DefaultLocator Instance => _instance ?? (_instance = new DefaultLocator());
     }
 
     public sealed class Match : Locator
@@ -34,9 +23,7 @@ namespace Arbor.Xdt
 
             foreach (string key in Arguments)
             {
-                var keyAttribute = CurrentElement.Attributes.GetNamedItem(key) as XmlAttribute;
-
-                if (keyAttribute != null)
+                if (CurrentElement.Attributes.GetNamedItem(key) is XmlAttribute keyAttribute)
                 {
                     string keySegment = string.Format(CultureInfo.InvariantCulture,
                         "@{0}='{1}'",

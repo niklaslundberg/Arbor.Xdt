@@ -180,20 +180,15 @@ namespace Arbor.Xdt
                     PreservationProvider = null;
                 }
 
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                reader?.Close();
             }
         }
 
         private void LoadFromTextReader(TextReader textReader)
         {
-            var streamReader = textReader as StreamReader;
-            if (streamReader != null)
+            if (textReader is StreamReader streamReader)
             {
-                var fileStream = streamReader.BaseStream as FileStream;
-                if (fileStream != null)
+                if (streamReader.BaseStream is FileStream fileStream)
                 {
                     FileName = fileStream.Name;
                 }
@@ -211,7 +206,7 @@ namespace Arbor.Xdt
             }
         }
 
-        private Encoding GetEncodingFromStream(Stream stream)
+        private static Encoding GetEncodingFromStream(Stream stream)
         {
             Encoding encoding = null;
             if (stream.CanSeek)
@@ -243,7 +238,7 @@ namespace Arbor.Xdt
             return encoding;
         }
 
-        private XmlElement FindContainingElement(XmlNode node)
+        private static XmlElement FindContainingElement(XmlNode node)
         {
             while (node != null && !(node is XmlElement))
             {
@@ -291,21 +286,20 @@ namespace Arbor.Xdt
             return clone;
         }
 
-        internal bool IsNewNode(XmlNode node)
+        internal static bool IsNewNode(XmlNode node)
         {
             // The transformation engine will only add elements. Anything
             // else that gets added must be contained by a new element.
             // So to determine what's new, we search up the tree for a new
             // element that contains this node.
-            var element = FindContainingElement(node) as XmlFileInfoElement;
-            return element != null && !element.IsOriginal;
+            return FindContainingElement(node) is XmlFileInfoElement element && !element.IsOriginal;
         }
 
         #region XmlElement override
 
         private class XmlFileInfoElement : XmlElement, IXmlLineInfo, IXmlFormattableAttributes
         {
-            private XmlAttributePreservationDict _preservationDict;
+            private readonly XmlAttributePreservationDict _preservationDict;
 
             internal XmlFileInfoElement(
                 string prefix,
@@ -334,19 +328,14 @@ namespace Arbor.Xdt
                 string prefix = Prefix;
                 if (!string.IsNullOrEmpty(NamespaceURI))
                 {
-                    prefix = w.LookupPrefix(NamespaceURI);
-                    if (prefix == null)
-                    {
-                        prefix = Prefix;
-                    }
+                    prefix = w.LookupPrefix(NamespaceURI) ?? Prefix;
                 }
 
                 w.WriteStartElement(prefix, LocalName, NamespaceURI);
 
                 if (HasAttributes)
                 {
-                    var preservingWriter = w as XmlAttributePreservingWriter;
-                    if (preservingWriter == null || _preservationDict == null)
+                    if (!(w is XmlAttributePreservingWriter preservingWriter) || _preservationDict == null)
                     {
                         WriteAttributesTo(w);
                     }
@@ -370,7 +359,7 @@ namespace Arbor.Xdt
             private void WriteAttributesTo(XmlWriter w)
             {
                 XmlAttributeCollection attrs = Attributes;
-                for (int i = 0; i < attrs.Count; i += 1)
+                for (int i = 0; i < attrs.Count; i++)
                 {
                     XmlAttribute attr = attrs[i];
                     attr.WriteTo(w);

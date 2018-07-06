@@ -24,7 +24,7 @@ namespace Arbor.Xdt
             XmlNodeList targetNodes,
             bool applyTransformToAllTargets)
         {
-            Debug.Assert(applyTransformToAllTargets == false);
+            Debug.Assert(!applyTransformToAllTargets);
 
             if (targetNodes.Count > 1)
             {
@@ -200,8 +200,7 @@ namespace Arbor.Xdt
         {
             foreach (XmlAttribute transformAttribute in TransformAttributes)
             {
-                var targetAttribute = TargetNode.Attributes.GetNamedItem(transformAttribute.Name) as XmlAttribute;
-                if (targetAttribute != null)
+                if (TargetNode.Attributes.GetNamedItem(transformAttribute.Name) is XmlAttribute targetAttribute)
                 {
                     targetAttribute.Value = transformAttribute.Value;
                 }
@@ -290,45 +289,12 @@ namespace Arbor.Xdt
         }
 
         // Directory registrory
-        internal static Regex DirRegex
-        {
-            get
-            {
-                if (_sDirRegex == null)
-                {
-                    _sDirRegex = new Regex(
-                        @"\G\{%(\s*(?<attrname>\w+(?=\W))(\s*(?<equal>=)\s*'(?<attrval>[^']*)'|\s*(?<equal>=)\s*(?<attrval>[^\s%>]*)|(?<equal>)(?<attrval>\s*?)))*\s*?%\}");
-                }
+        internal static Regex DirRegex => _sDirRegex ?? (_sDirRegex = new Regex(
+                                              @"\G\{%(\s*(?<attrname>\w+(?=\W))(\s*(?<equal>=)\s*'(?<attrval>[^']*)'|\s*(?<equal>=)\s*(?<attrval>[^\s%>]*)|(?<equal>)(?<attrval>\s*?)))*\s*?%\}"));
 
-                return _sDirRegex;
-            }
-        }
+        internal static Regex ParentAttributeRegex => _sParentAttribRegex ?? (_sParentAttribRegex = new Regex(@"\G\$\((?<tagname>[\w:\.]+)\)"));
 
-        internal static Regex ParentAttributeRegex
-        {
-            get
-            {
-                if (_sParentAttribRegex == null)
-                {
-                    _sParentAttribRegex = new Regex(@"\G\$\((?<tagname>[\w:\.]+)\)");
-                }
-
-                return _sParentAttribRegex;
-            }
-        }
-
-        internal static Regex TokenFormatRegex
-        {
-            get
-            {
-                if (_sTokenFormatRegex == null)
-                {
-                    _sTokenFormatRegex = new Regex(@"\G\#\((?<tagname>[\w:\.]+)\)");
-                }
-
-                return _sTokenFormatRegex;
-            }
-        }
+        internal static Regex TokenFormatRegex => _sTokenFormatRegex ?? (_sTokenFormatRegex = new Regex(@"\G\#\((?<tagname>[\w:\.]+)\)"));
 
         protected override void Apply()
         {
@@ -448,7 +414,7 @@ namespace Arbor.Xdt
                 int index = 0;
                 foreach (System.Text.RegularExpressions.Match match in matchsExpr)
                 {
-                    strbuilder.Append(transformValue.Substring(position, match.Index - position));
+                    strbuilder.Append(transformValue, position, match.Index - position);
                     Capture captureTagName = match.Groups["tagname"];
                     string attributeName = captureTagName.Value;
 
@@ -502,10 +468,10 @@ namespace Arbor.Xdt
                                     identifier.Append(" and ");
                                 }
 
-                                identifier.Append(string.Format(CultureInfo.InvariantCulture,
+                                identifier.AppendFormat(CultureInfo.InvariantCulture,
                                     "@{0}='{1}'",
                                     match,
-                                    val));
+                                    val);
                             }
                             else
                             {
@@ -603,17 +569,18 @@ namespace Arbor.Xdt
 
                     foreach (System.Text.RegularExpressions.Match match in matchs)
                     {
-                        strbuilder.Append(transformValue.Substring(position, match.Index - position));
+                        strbuilder.Append(transformValue, position, match.Index - position);
                         CaptureCollection attrnames = match.Groups["attrname"].Captures;
                         if (attrnames.Count > 0)
                         {
                             CaptureCollection attrvalues =
                                 match.Groups["attrval"].Captures;
-                            var paramDictionary = new Dictionary<string, string>(4, StringComparer.OrdinalIgnoreCase);
-
-                            paramDictionary[XPathWithIndex] = xpath;
-                            paramDictionary[TokenNumber] =
-                                index.ToString(CultureInfo.InvariantCulture);
+                            var paramDictionary =
+                                new Dictionary<string, string>(4, StringComparer.OrdinalIgnoreCase)
+                                {
+                                    [XPathWithIndex] = xpath,
+                                    [TokenNumber] = index.ToString(CultureInfo.InvariantCulture)
+                                };
 
                             // Get the key-value pare of the in the tranform form
                             for (int i = 0; i < attrnames.Count; i++)
@@ -629,8 +596,7 @@ namespace Arbor.Xdt
                             }
 
                             //Identify the Token format
-                            string strTokenFormat = null;
-                            if (!paramDictionary.TryGetValue(Token, out strTokenFormat))
+                            if (!paramDictionary.TryGetValue(Token, out string strTokenFormat))
                             {
                                 strTokenFormat = _storageDictionary.TokenFormat;
                             }
@@ -656,10 +622,7 @@ namespace Arbor.Xdt
                                 string newVal = SubstituteKownValue(val,
                                     TokenFormatRegex,
                                     "#(",
-                                    delegate(string key)
-                                    {
-                                        return paramDictionary.ContainsKey(key) ? paramDictionary[key] : null;
-                                    });
+                                    key => paramDictionary.ContainsKey(key) ? paramDictionary[key] : null);
 
                                 paramDictionary[keyindex] = newVal;
                             }
@@ -670,9 +633,8 @@ namespace Arbor.Xdt
                                 strbuilder.Append(strTokenFormat);
                             }
 
-                            string attributeLocator;
-                            if (paramDictionary.TryGetValue(XpathLocator, out attributeLocator) &&
-                                !string.IsNullOrEmpty(attributeLocator))
+                            if (paramDictionary.TryGetValue(XpathLocator, out string attributeLocator)
+                                && !string.IsNullOrEmpty(attributeLocator))
                             {
                                 IList<string> locators = XmlArgumentUtility.SplitArguments(attributeLocator);
                                 string xpathwithlocator = GetXPathToAttribute(targetAttribute, locators);

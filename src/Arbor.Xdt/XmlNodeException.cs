@@ -8,8 +8,8 @@ namespace Arbor.Xdt
     [Serializable]
     public sealed class XmlNodeException : XmlTransformationException
     {
-        private XmlFileInfoDocument _document;
-        private IXmlLineInfo _lineInfo;
+        private readonly XmlFileInfoDocument _document;
+        private readonly IXmlLineInfo _lineInfo;
 
         public XmlNodeException(Exception innerException, XmlNode node)
             : base(innerException.Message, innerException)
@@ -27,11 +27,11 @@ namespace Arbor.Xdt
 
         public bool HasErrorInfo => _lineInfo != null;
 
-        public string FileName => _document != null ? _document.FileName : null;
+        public string FileName => _document?.FileName;
 
-        public int LineNumber => _lineInfo != null ? _lineInfo.LineNumber : 0;
+        public int LineNumber => _lineInfo?.LineNumber ?? 0;
 
-        public int LinePosition => _lineInfo != null ? _lineInfo.LinePosition : 0;
+        public int LinePosition => _lineInfo?.LinePosition ?? 0;
 
         public static Exception Wrap(Exception ex, XmlNode node)
         {

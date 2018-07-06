@@ -9,7 +9,7 @@ namespace Arbor.Xdt.Tests
     internal class TestTransformationLogger : IXmlTransformationLogger
     {
         private readonly string _indentStringPiece = "  ";
-        private StringBuilder _log = new StringBuilder();
+        private readonly StringBuilder _log = new StringBuilder();
         private int _indentLevel;
         private string _indentString;
 
@@ -73,13 +73,13 @@ namespace Arbor.Xdt.Tests
             params object[] messageArgs)
         {
             // we will format like: transform.xml (30, 10) warning: Argument 'snap' did not match any attributes
-            string format = "{0} ({1}, {2}) warning: {3}";
-            _log.AppendLine(string.Format(CultureInfo.InvariantCulture,
+            const string format = "{0} ({1}, {2}) warning: {3}";
+            _log.AppendFormat(CultureInfo.InvariantCulture,
                 format,
                 Path.GetFileName(file),
                 lineNumber,
                 linePosition,
-                string.Format(CultureInfo.InvariantCulture, message, messageArgs)));
+                string.Format(CultureInfo.InvariantCulture, message, messageArgs)).AppendLine();
         }
 
         public void LogError(string message, params object[] messageArgs)
@@ -95,14 +95,14 @@ namespace Arbor.Xdt.Tests
         public void LogError(string file, int lineNumber, int linePosition, string message, params object[] messageArgs)
         {
             //transform.xml(33, 10) error: Could not resolve 'ThrowException' as a type of Transform
-            string format = "{0} ({1}, {2}) error: {3}";
-            _log.AppendLine(string.Format(
+            const string format = "{0} ({1}, {2}) error: {3}";
+            _log.AppendFormat(
                 CultureInfo.InvariantCulture,
                 format,
                 Path.GetFileName(file),
                 lineNumber,
                 linePosition,
-                string.Format(CultureInfo.InvariantCulture, message, messageArgs)));
+                string.Format(CultureInfo.InvariantCulture, message, messageArgs)).AppendLine();
         }
 
         public void LogErrorFromException(Exception ex)

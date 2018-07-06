@@ -33,7 +33,7 @@ namespace Arbor.Xdt
             }
         }
 
-        private string ConvertUriToFileName(XmlDocument xmlDocument)
+        private static string ConvertUriToFileName(XmlDocument xmlDocument)
         {
             string uri;
             var errorInfoDocument = xmlDocument as XmlFileInfoDocument;
@@ -97,7 +97,7 @@ namespace Arbor.Xdt
 
         private bool _hasLoggedErrors;
 
-        private IXmlTransformationLogger _externalLogger;
+        private readonly IXmlTransformationLogger _externalLogger;
         private XmlNode _currentReferenceNode;
 
         #endregion
@@ -108,18 +108,12 @@ namespace Arbor.Xdt
 
         public void LogMessage(string message, params object[] messageArgs)
         {
-            if (_externalLogger != null)
-            {
-                _externalLogger.LogMessage(message, messageArgs);
-            }
+            _externalLogger?.LogMessage(message, messageArgs);
         }
 
         public void LogMessage(MessageType type, string message, params object[] messageArgs)
         {
-            if (_externalLogger != null)
-            {
-                _externalLogger.LogMessage(type, message, messageArgs);
-            }
+            _externalLogger?.LogMessage(type, message, messageArgs);
         }
 
         public void LogWarning(string message, params object[] messageArgs)
@@ -200,9 +194,8 @@ namespace Arbor.Xdt
             if (_externalLogger != null)
             {
                 string fileName = ConvertUriToFileName(referenceNode.OwnerDocument);
-                var lineInfo = referenceNode as IXmlLineInfo;
 
-                if (lineInfo != null)
+                if (referenceNode is IXmlLineInfo lineInfo)
                 {
                     _externalLogger.LogError(
                         fileName,
@@ -228,34 +221,22 @@ namespace Arbor.Xdt
 
         public void StartSection(string message, params object[] messageArgs)
         {
-            if (_externalLogger != null)
-            {
-                _externalLogger.StartSection(message, messageArgs);
-            }
+            _externalLogger?.StartSection(message, messageArgs);
         }
 
         public void StartSection(MessageType type, string message, params object[] messageArgs)
         {
-            if (_externalLogger != null)
-            {
-                _externalLogger.StartSection(type, message, messageArgs);
-            }
+            _externalLogger?.StartSection(type, message, messageArgs);
         }
 
         public void EndSection(string message, params object[] messageArgs)
         {
-            if (_externalLogger != null)
-            {
-                _externalLogger.EndSection(message, messageArgs);
-            }
+            _externalLogger?.EndSection(message, messageArgs);
         }
 
         public void EndSection(MessageType type, string message, params object[] messageArgs)
         {
-            if (_externalLogger != null)
-            {
-                _externalLogger.EndSection(type, message, messageArgs);
-            }
+            _externalLogger?.EndSection(type, message, messageArgs);
         }
 
         #endregion

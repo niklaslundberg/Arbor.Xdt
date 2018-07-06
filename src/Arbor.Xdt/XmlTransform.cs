@@ -37,8 +37,8 @@ namespace Arbor.Xdt
         protected Transform(TransformFlags flags, MissingTargetMessage message)
         {
             MissingTargetMessage = message;
-            ApplyTransformToAllTargetNodes = (flags & TransformFlags.ApplyTransformToAllTargetNodes) ==
-                                             TransformFlags.ApplyTransformToAllTargetNodes;
+            ApplyTransformToAllTargetNodes = (flags & TransformFlags.ApplyTransformToAllTargetNodes)
+                                             == TransformFlags.ApplyTransformToAllTargetNodes;
             UseParentAsTargetNode =
                 (flags & TransformFlags.UseParentAsTargetNode) == TransformFlags.UseParentAsTargetNode;
         }
@@ -49,18 +49,7 @@ namespace Arbor.Xdt
 
         protected MissingTargetMessage MissingTargetMessage { get; set; }
 
-        protected XmlNode TransformNode
-        {
-            get
-            {
-                if (_currentTransformNode == null)
-                {
-                    return _context.TransformNode;
-                }
-
-                return _currentTransformNode;
-            }
-        }
+        protected XmlNode TransformNode => _currentTransformNode ?? _context.TransformNode;
 
         protected XmlNode TargetNode
         {
@@ -198,8 +187,7 @@ namespace Arbor.Xdt
 
         private void WriteApplyMessage(XmlNode targetNode)
         {
-            var lineInfo = targetNode as IXmlLineInfo;
-            if (lineInfo != null)
+            if (targetNode is IXmlLineInfo lineInfo)
             {
                 Log.LogMessage(MessageType.Verbose,
                     SR.XMLTRANSFORMATION_TransformStatusApplyTarget,
