@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Arbor.Xdt
 {
@@ -10,11 +8,13 @@ namespace Arbor.Xdt
     public class XmlTransformationException : Exception
     {
         public XmlTransformationException(string message)
-            : base(message) {
+            : base(message)
+        {
         }
 
         public XmlTransformationException(string message, Exception innerException)
-            : base(message, innerException) {
+            : base(message, innerException)
+        {
         }
     }
 }

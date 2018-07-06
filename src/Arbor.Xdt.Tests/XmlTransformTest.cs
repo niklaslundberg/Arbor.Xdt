@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Arbor.Xdt.Tests.Properties;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -36,19 +37,20 @@ namespace Arbor.Xdt.Tests
                         Assert.AreEqual(true, succeed);
 
                         //verify, the stream is not closed
-                        Assert.AreEqual(true, fsDestFile.CanWrite, "The file stream can not be written. was it closed?");
+                        Assert.AreEqual(true,
+                            fsDestFile.CanWrite,
+                            "The file stream can not be written. was it closed?");
 
                         //sanity verify the content is right, (xml was transformed)
                         fsDestFile.Close();
                     }
 
                     string content = File.ReadAllText(destFile);
-                    Assert.IsFalse(content.Contains("debug=\"true\""));
+                    Assert.IsFalse(content.Contains("debug=\"true\"", StringComparison.Ordinal));
 
                     var lines = new List<string>(File.ReadLines(destFile));
                     //sanity verify the line format is not lost (otherwsie we will have only one long line)
                     Assert.IsTrue(lines.Count > 10);
-
                 }
             }
         }
@@ -174,7 +176,7 @@ namespace Arbor.Xdt.Tests
             {
                 Assert.AreEqual(baseLines[i],
                     resultLines[i],
-                    string.Format("line {0} at baseline file is not matched", i));
+                    string.Format(CultureInfo.InvariantCulture, "line {0} at baseline file is not matched", i));
             }
         }
 

@@ -1,41 +1,43 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 
 namespace Arbor.Xdt.Tests
 {
     internal class TestTransformationLogger : IXmlTransformationLogger
     {
-        private int indentLevel = 0;
-        private readonly string indentStringPiece = "  ";
-        private string indentString = null;
+        private readonly string _indentStringPiece = "  ";
         private StringBuilder _log = new StringBuilder();
+        private int _indentLevel;
+        private string _indentString;
 
         private string IndentString
         {
             get
             {
-                if (indentString == null)
+                if (_indentString == null)
                 {
-                    indentString = String.Empty;
-                    for (int i = 0; i < indentLevel; i++)
+                    _indentString = string.Empty;
+                    for (int i = 0; i < _indentLevel; i++)
                     {
-                        indentString += indentStringPiece;
+                        _indentString += _indentStringPiece;
                     }
                 }
-                return indentString;
+
+                return _indentString;
             }
         }
 
         private int IndentLevel
         {
-            get => indentLevel;
+            get => _indentLevel;
             set
             {
-                if (indentLevel != value)
+                if (_indentLevel != value)
                 {
-                    indentLevel = value;
-                    indentString = null;
+                    _indentLevel = value;
+                    _indentString = null;
                 }
             }
         }
@@ -49,7 +51,7 @@ namespace Arbor.Xdt.Tests
 
         public void LogMessage(MessageType type, string message, params object[] messageArgs)
         {
-            _log.AppendLine(String.Concat(IndentString, string.Format(message, messageArgs)));
+            _log.AppendLine(string.Concat(IndentString, string.Format(CultureInfo.InvariantCulture, message, messageArgs)));
         }
 
         public void LogWarning(string message, params object[] messageArgs)
@@ -62,11 +64,21 @@ namespace Arbor.Xdt.Tests
             LogWarning(file, 0, 0, message, messageArgs);
         }
 
-        public void LogWarning(string file, int lineNumber, int linePosition, string message, params object[] messageArgs)
+        public void LogWarning(
+            string file,
+            int lineNumber,
+            int linePosition,
+            string message,
+            params object[] messageArgs)
         {
             // we will format like: transform.xml (30, 10) warning: Argument 'snap' did not match any attributes
             string format = "{0} ({1}, {2}) warning: {3}";
-            _log.AppendLine(string.Format(format, System.IO.Path.GetFileName(file), lineNumber, linePosition, string.Format(message,messageArgs)));
+            _log.AppendLine(string.Format(CultureInfo.InvariantCulture,
+                format,
+                System.IO.Path.GetFileName(file),
+                lineNumber,
+                linePosition,
+                string.Format(CultureInfo.InvariantCulture, message, messageArgs)));
         }
 
         public void LogError(string message, params object[] messageArgs)
@@ -83,14 +95,24 @@ namespace Arbor.Xdt.Tests
         {
             //transform.xml(33, 10) error: Could not resolve 'ThrowException' as a type of Transform
             string format = "{0} ({1}, {2}) error: {3}";
-            _log.AppendLine(string.Format(format, System.IO.Path.GetFileName(file), lineNumber, linePosition, string.Format(message,messageArgs)));
+            _log.AppendLine(string.Format(
+                CultureInfo.InvariantCulture,
+                format,
+                System.IO.Path.GetFileName(file),
+                lineNumber,
+                linePosition,
+                string.Format(message, messageArgs)));
         }
 
-        public void LogErrorFromException(Exception ex) {}
+        public void LogErrorFromException(Exception ex)
+        {
+        }
 
-        public void LogErrorFromException(Exception ex, string file) {}
+        public void LogErrorFromException(Exception ex, string file)
+        {
+        }
 
-        public void LogErrorFromException(Exception ex, string file, int lineNumber, int linePosition) 
+        public void LogErrorFromException(Exception ex, string file, int lineNumber, int linePosition)
         {
             string message = ex.Message;
             LogError(file, lineNumber, linePosition, message);

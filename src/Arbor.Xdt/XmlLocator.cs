@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Xml;
 using System.Diagnostics;
+using System.Xml;
 
 namespace Arbor.Xdt
 {
-    public enum XPathAxis {
+    public enum XPathAxis
+    {
         Child,
         Descendant,
         Parent,
@@ -17,176 +17,151 @@ namespace Arbor.Xdt
         Preceding,
         Self,
         DescendantOrSelf,
-        AncestorOrSelf,
+        AncestorOrSelf
     }
 
     public abstract class Locator
     {
-        #region private data members
-        private string argumentString = null;
-        private IList<string> arguments = null;
-        private string parentPath = null;
-        private XmlElementContext context = null;
-        private XmlTransformationLogger logger = null;
-        #endregion
+        protected virtual string ParentPath => _parentPath;
 
-        protected virtual string ParentPath => parentPath;
+        protected XmlNode CurrentElement => _context.Element;
 
-        protected XmlNode CurrentElement => context.Element;
-
-        virtual protected string NextStepNodeTest {
-            get {
-                if (!String.IsNullOrEmpty(CurrentElement.NamespaceURI) && String.IsNullOrEmpty(CurrentElement.Prefix)) {
-                    return String.Concat("_defaultNamespace:", CurrentElement.LocalName);
+        protected virtual string NextStepNodeTest
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(CurrentElement.NamespaceURI) && string.IsNullOrEmpty(CurrentElement.Prefix))
+                {
+                    return string.Concat("_defaultNamespace:", CurrentElement.LocalName);
                 }
-                else {
-                    return CurrentElement.Name;
-                }
+
+                return CurrentElement.Name;
             }
         }
-        virtual protected XPathAxis NextStepAxis => XPathAxis.Child;
 
-        protected virtual string ConstructPath() {
+        protected virtual XPathAxis NextStepAxis => XPathAxis.Child;
+
+        protected XmlTransformationLogger Log
+        {
+            get
+            {
+                if (_logger == null)
+                {
+                    _logger = _context.GetService<XmlTransformationLogger>();
+                    if (_logger != null)
+                    {
+                        _logger.CurrentReferenceNode = _context.LocatorAttribute;
+                    }
+                }
+
+                return _logger;
+            }
+        }
+
+        protected string ArgumentString { get; private set; }
+
+        protected IList<string> Arguments
+        {
+            get
+            {
+                if (_arguments == null && ArgumentString != null)
+                {
+                    _arguments = XmlArgumentUtility.SplitArguments(ArgumentString);
+                }
+
+                return _arguments;
+            }
+        }
+
+        protected virtual string ConstructPath()
+        {
             return AppendStep(ParentPath, NextStepAxis, NextStepNodeTest, ConstructPredicate());
         }
 
-        protected string AppendStep(string basePath, string stepNodeTest) {
-            return AppendStep(basePath, XPathAxis.Child, stepNodeTest, String.Empty);
+        protected string AppendStep(string basePath, string stepNodeTest)
+        {
+            return AppendStep(basePath, XPathAxis.Child, stepNodeTest, string.Empty);
         }
 
-        protected string AppendStep(string basePath, XPathAxis stepAxis, string stepNodeTest) {
-            return AppendStep(basePath, stepAxis, stepNodeTest, String.Empty);
+        protected string AppendStep(string basePath, XPathAxis stepAxis, string stepNodeTest)
+        {
+            return AppendStep(basePath, stepAxis, stepNodeTest, string.Empty);
         }
 
-        protected string AppendStep(string basePath, string stepNodeTest, string predicate) {
+        protected string AppendStep(string basePath, string stepNodeTest, string predicate)
+        {
             return AppendStep(basePath, XPathAxis.Child, stepNodeTest, predicate);
         }
 
-        protected string AppendStep(string basePath, XPathAxis stepAxis, string stepNodeTest, string predicate) {
-            return String.Concat(
-                EnsureTrailingSlash(basePath), 
-                GetAxisString(stepAxis), 
-                stepNodeTest, 
+        protected string AppendStep(string basePath, XPathAxis stepAxis, string stepNodeTest, string predicate)
+        {
+            return string.Concat(
+                EnsureTrailingSlash(basePath),
+                GetAxisString(stepAxis),
+                stepNodeTest,
                 EnsureBracketedPredicate(predicate));
         }
 
-        protected virtual string ConstructPredicate() {
-            return String.Empty;
+        protected virtual string ConstructPredicate()
+        {
+            return string.Empty;
         }
 
-        protected XmlTransformationLogger Log {
-            get {
-                if (logger == null) {
-                    logger = context.GetService<XmlTransformationLogger>();
-                    if (logger != null) {
-                        logger.CurrentReferenceNode = context.LocatorAttribute;
-                    }
-                }
-                return logger;
-            }
-        }
-
-        protected string ArgumentString => argumentString;
-
-        protected IList<string> Arguments {
-            get {
-                if (arguments == null && argumentString != null) {
-                    arguments = XmlArgumentUtility.SplitArguments(argumentString);
-                }
-                return arguments;
-            }
-        }
-
-        protected void EnsureArguments() {
+        protected void EnsureArguments()
+        {
             EnsureArguments(1);
         }
 
-        protected void EnsureArguments(int min) {
-            if (Arguments == null || Arguments.Count < min) {
-                throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_RequiresMinimumArguments, GetType().Name, min));
+        protected void EnsureArguments(int min)
+        {
+            if (Arguments == null || Arguments.Count < min)
+            {
+                throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    SR.XMLTRANSFORMATION_RequiresMinimumArguments,
+                    GetType().Name,
+                    min));
             }
         }
 
-        protected void EnsureArguments(int min, int max) {
+        protected void EnsureArguments(int min, int max)
+        {
             Debug.Assert(min <= max);
-            if (min == max) {
-                if (Arguments == null || Arguments.Count != min) {
-                    throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture, SR.XMLTRANSFORMATION_RequiresExactArguments, GetType().Name, min));
+            if (min == max)
+            {
+                if (Arguments == null || Arguments.Count != min)
+                {
+                    throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                        SR.XMLTRANSFORMATION_RequiresExactArguments,
+                        GetType().Name,
+                        min));
                 }
             }
 
             EnsureArguments(min);
 
-            if (Arguments.Count > max) {
-                throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture, SR.XMLTRANSFORMATION_TooManyArguments, GetType().Name));
+            if (Arguments.Count > max)
+            {
+                throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    SR.XMLTRANSFORMATION_TooManyArguments,
+                    GetType().Name));
             }
         }
 
-        internal string ConstructPath(string parentPath, XmlElementContext context, string argumentString) {
-            Debug.Assert(this.parentPath == null && this.context == null && this.argumentString == null,
-                "Do not call ConstructPath recursively");
-
-            string resultPath = String.Empty;
-
-            if (this.parentPath == null && this.context == null && this.argumentString == null) {
-                try {
-                    this.parentPath = parentPath;
-                    this.context = context;
-                    this.argumentString = argumentString;
-
-                    resultPath = ConstructPath();
-                }
-                finally {
-                    this.parentPath = null;
-                    this.context = null;
-                    this.argumentString = null;
-                    this.arguments = null;
-
-                    ReleaseLogger();
-                }
-            }
-
-            return resultPath;
-        }
-
-        internal string ConstructParentPath(string parentPath, XmlElementContext context, string argumentString) {
-            Debug.Assert(this.parentPath == null && this.context == null && this.argumentString == null,
-                "Do not call ConstructPath recursively");
-
-            string resultPath = String.Empty;
-
-            if (this.parentPath == null && this.context == null && this.argumentString == null) {
-                try {
-                    this.parentPath = parentPath;
-                    this.context = context;
-                    this.argumentString = argumentString;
-
-                    resultPath = ParentPath;
-                }
-                finally {
-                    this.parentPath = null;
-                    this.context = null;
-                    this.argumentString = null;
-                    this.arguments = null;
-
-                    ReleaseLogger();
-                }
-            }
-
-            return resultPath;
-        }
-
-        private void ReleaseLogger() {
-            if (logger != null) {
-                logger.CurrentReferenceNode = null;
-                logger = null;
+        private void ReleaseLogger()
+        {
+            if (_logger != null)
+            {
+                _logger.CurrentReferenceNode = null;
+                _logger = null;
             }
         }
 
-        private string GetAxisString(XPathAxis stepAxis) {
-            switch (stepAxis) {
+        private static string GetAxisString(XPathAxis stepAxis)
+        {
+            switch (stepAxis)
+            {
                 case XPathAxis.Child:
-                    return String.Empty;
+                    return string.Empty;
                 case XPathAxis.Descendant:
                     return "descendant::";
                 case XPathAxis.Parent:
@@ -209,32 +184,109 @@ namespace Arbor.Xdt
                     return "ancestor-or-self::";
                 default:
                     Debug.Fail("There should be no XPathAxis enum value that isn't handled in this switch statement");
-                    return String.Empty;
+                    return string.Empty;
             }
         }
 
-        private string EnsureTrailingSlash(string basePath) {
-            if (!basePath.EndsWith("/", StringComparison.Ordinal)) {
-                basePath = String.Concat(basePath, "/");
+        private static string EnsureTrailingSlash(string basePath)
+        {
+            if (!basePath.EndsWith("/", StringComparison.Ordinal))
+            {
+                basePath = string.Concat(basePath, "/");
             }
 
             return basePath;
         }
 
-        private string EnsureBracketedPredicate(string predicate) {
-            if (String.IsNullOrEmpty(predicate)) {
-                return String.Empty;
+        private static string EnsureBracketedPredicate(string predicate)
+        {
+            if (string.IsNullOrEmpty(predicate))
+            {
+                return string.Empty;
             }
-            else {
-                if (!predicate.StartsWith("[", StringComparison.Ordinal)) {
-                    predicate = String.Concat("[", predicate);
-                }
-                if (!predicate.EndsWith("]", StringComparison.Ordinal)) {
-                    predicate = String.Concat(predicate, "]");
-                }
 
-                return predicate;
+            if (!predicate.StartsWith("[", StringComparison.Ordinal))
+            {
+                predicate = string.Concat("[", predicate);
             }
+
+            if (!predicate.EndsWith("]", StringComparison.Ordinal))
+            {
+                predicate = string.Concat(predicate, "]");
+            }
+
+            return predicate;
         }
+
+        internal string ConstructPath(string parentPath, XmlElementContext context, string argumentString)
+        {
+            Debug.Assert(this._parentPath == null && this._context == null && ArgumentString == null,
+                "Do not call ConstructPath recursively");
+
+            string resultPath = string.Empty;
+
+            if (this._parentPath == null && this._context == null && ArgumentString == null)
+            {
+                try
+                {
+                    this._parentPath = parentPath;
+                    this._context = context;
+                    ArgumentString = argumentString;
+
+                    resultPath = ConstructPath();
+                }
+                finally
+                {
+                    this._parentPath = null;
+                    this._context = null;
+                    ArgumentString = null;
+                    _arguments = null;
+
+                    ReleaseLogger();
+                }
+            }
+
+            return resultPath;
+        }
+
+        internal string ConstructParentPath(string parentPath, XmlElementContext context, string argumentString)
+        {
+            Debug.Assert(this._parentPath == null && this._context == null && ArgumentString == null,
+                "Do not call ConstructPath recursively");
+
+            string resultPath = string.Empty;
+
+            if (this._parentPath == null && this._context == null && ArgumentString == null)
+            {
+                try
+                {
+                    this._parentPath = parentPath;
+                    this._context = context;
+                    ArgumentString = argumentString;
+
+                    resultPath = ParentPath;
+                }
+                finally
+                {
+                    this._parentPath = null;
+                    this._context = null;
+                    ArgumentString = null;
+                    _arguments = null;
+
+                    ReleaseLogger();
+                }
+            }
+
+            return resultPath;
+        }
+
+        #region private data members
+
+        private IList<string> _arguments;
+        private string _parentPath;
+        private XmlElementContext _context;
+        private XmlTransformationLogger _logger;
+
+        #endregion
     }
 }

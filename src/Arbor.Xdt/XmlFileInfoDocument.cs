@@ -138,24 +138,24 @@ namespace Arbor.Xdt
             }
         }
 
-        public override XmlElement CreateElement(string prefix, string localName, string namespaceURI)
+        public override XmlElement CreateElement(string prefix, string localName, string namespaceUri)
         {
             if (HasErrorInfo)
             {
-                return new XmlFileInfoElement(prefix, localName, namespaceURI, this);
+                return new XmlFileInfoElement(prefix, localName, namespaceUri, this);
             }
 
-            return base.CreateElement(prefix, localName, namespaceURI);
+            return base.CreateElement(prefix, localName, namespaceUri);
         }
 
-        public override XmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI)
+        public override XmlAttribute CreateAttribute(string prefix, string localName, string namespaceUri)
         {
             if (HasErrorInfo)
             {
-                return new XmlFileInfoAttribute(prefix, localName, namespaceURI, this);
+                return new XmlFileInfoAttribute(prefix, localName, namespaceUri, this);
             }
 
-            return base.CreateAttribute(prefix, localName, namespaceURI);
+            return base.CreateAttribute(prefix, localName, namespaceUri);
         }
 
         private void LoadFromFileName(string filename)
@@ -307,7 +307,7 @@ namespace Arbor.Xdt
 
         private class XmlFileInfoElement : XmlElement, IXmlLineInfo, IXmlFormattableAttributes
         {
-            private XmlAttributePreservationDict preservationDict;
+            private XmlAttributePreservationDict _preservationDict;
 
             internal XmlFileInfoElement(
                 string prefix,
@@ -322,12 +322,12 @@ namespace Arbor.Xdt
 
                 if (document.PreservationProvider != null)
                 {
-                    preservationDict = document.PreservationProvider.GetDictAtPosition(LineNumber, LinePosition - 1);
+                    _preservationDict = document.PreservationProvider.GetDictAtPosition(LineNumber, LinePosition - 1);
                 }
 
-                if (preservationDict == null)
+                if (_preservationDict == null)
                 {
-                    preservationDict = new XmlAttributePreservationDict();
+                    _preservationDict = new XmlAttributePreservationDict();
                 }
             }
 
@@ -348,7 +348,7 @@ namespace Arbor.Xdt
                 if (HasAttributes)
                 {
                     var preservingWriter = w as XmlAttributePreservingWriter;
-                    if (preservingWriter == null || preservationDict == null)
+                    if (preservingWriter == null || _preservationDict == null)
                     {
                         WriteAttributesTo(w);
                     }
@@ -381,7 +381,7 @@ namespace Arbor.Xdt
 
             private void WritePreservedAttributesTo(XmlAttributePreservingWriter preservingWriter)
             {
-                preservationDict.WritePreservedAttributes(preservingWriter, Attributes);
+                _preservationDict.WritePreservedAttributes(preservingWriter, Attributes);
             }
 
             #region IXmlLineInfo Members
@@ -403,10 +403,10 @@ namespace Arbor.Xdt
 
             void IXmlFormattableAttributes.FormatAttributes(XmlFormatter formatter)
             {
-                preservationDict.UpdatePreservationInfo(Attributes, formatter);
+                _preservationDict.UpdatePreservationInfo(Attributes, formatter);
             }
 
-            string IXmlFormattableAttributes.AttributeIndent => preservationDict.GetAttributeNewLineString(null);
+            string IXmlFormattableAttributes.AttributeIndent => _preservationDict.GetAttributeNewLineString(null);
 
             #endregion
         }
@@ -469,8 +469,8 @@ namespace Arbor.Xdt
 
         ~XmlFileInfoDocument()
         {
-            Debug.Fail("call dispose please");
             Dispose(false);
+            Debug.Fail("call dispose please");
         }
 
         #endregion

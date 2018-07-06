@@ -78,12 +78,16 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;configuration&gt;
-        ///  &lt;connectionStrings&gt;
-        ///    &lt;!-- Attributes on this element should be separated by single spaces --&gt;
-        ///    &lt;add  name=&quot;AddingScenario1&quot;   connectionString=&quot;Data Source=JODAVIS-DEV1;Initial Catalog=Northwind;Integrated Security=True&quot;    providerName=&quot;System.Data.SqlClient&quot; /&gt;
-        ///    &lt;!-- Attributes on this element should be separated by spaces, with providerName wrapped using a generated tab --&gt;
-        ///    &lt;add  name=&quot;AddingScenario2&quot;   connectionString=&quot;Data Source=JODAVIS-DEV1 [rest of string was truncated]&quot;;.
+        ///    &lt;connectionStrings&gt;
+        ///        &lt;!-- Attributes on this element should be separated by single spaces --&gt;
+        ///        &lt;add name=&quot;AddingScenario1&quot;
+        ///             connectionString=&quot;Data Source=JODAVIS-DEV1;Initial Catalog=Northwind;Integrated Security=True&quot;
+        ///             providerName=&quot;System.Data.SqlClient&quot; /&gt;
+        ///        &lt;!-- Attributes on this element should be separated by spaces, with providerName wrapped using a generated tab --&gt;
+        ///        &lt;add name=&quot;AddingScenario2&quot;
+        ///   [rest of string was truncated]&quot;;.
         /// </summary>
         public static string AttributeFormating_source {
             get {
@@ -93,13 +97,15 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;configuration xmlns:xct=&quot;http://schemas.microsoft.com/XML-Document-Transform&quot;&gt;
-        ///  &lt;connectionStrings&gt;
-        ///    &lt;!-- ADDING ATTRIBUTE SCENARIOS --&gt;
-        ///    &lt;!-- 1. All attributes added, no newlines required --&gt;
-        ///    &lt;add name=&quot;AddingScenario1&quot; connectionString=&quot;Just ask Joe, he&apos;ll do it&quot; providerName=&quot;Joe&quot; xct:Transform=&quot;Replace&quot; xct:Locator=&quot;Match(name)&quot;/&gt;
-        ///    &lt;!-- 2. All attributes added, No newlines from siblings --&gt;
-        ///    &lt;add name=&quot;AddingScenario2&quot; connectionString=&quot;Just ask Joe, he&apos;ll  [rest of string was truncated]&quot;;.
+        ///    &lt;connectionStrings&gt;
+        ///        &lt;!-- ADDING ATTRIBUTE SCENARIOS --&gt;
+        ///        &lt;!-- 1. All attributes added, no newlines required --&gt;
+        ///        &lt;add name=&quot;AddingScenario1&quot; connectionString=&quot;Just ask Joe, he&apos;ll do it&quot; providerName=&quot;Joe&quot;
+        ///             xct:Transform=&quot;Replace&quot; xct:Locator=&quot;Match(name)&quot; /&gt;
+        ///        &lt;!-- 2. All attributes added, No newlines from siblings --&gt;
+        ///        &lt;add name=&quot;AddingScenario2&quot; [rest of string was truncated]&quot;;.
         /// </summary>
         public static string AttributeFormating_transform {
             get {
@@ -160,6 +166,7 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;html&gt;
         ///    &lt;head&gt;
         ///        &lt;title&gt;STREAM Interactive - UAT&lt;/title&gt;
@@ -178,12 +185,12 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;html xmlns:xdt=&quot;http://schemas.microsoft.com/XML-Document-Transform&quot;&gt;
         ///    &lt;head&gt;
         ///        &lt;title xdt:Transform=&quot;Replace&quot;&gt;TITLEHEADINGHERE&lt;/title&gt;
         ///    &lt;/head&gt;
-        ///&lt;/html&gt;
-        ///.
+        ///&lt;/html&gt;.
         /// </summary>
         public static string EdgeCase_transform {
             get {
@@ -231,13 +238,15 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;configuration&gt;
-        ///  &lt;!-- LookAheadTarget and LookAheadInserted should line up with LookAheadIndent --&gt;
-        ///  &lt;appSettings&gt;&lt;add key=&quot;LookAheadTarget&quot; value=&quot;No indent established before this&quot;/&gt;   &lt;!-- This should be on the same line as LookAheadTarget --&gt;
-        ///    &lt;add key=&quot;LookAheadIndent&quot; value=&quot;We should use this tag&apos;s indent&quot; /&gt;
-        ///    &lt;!-- There should be no blank line after this comment --&gt;
-        ///    &lt;add key=&quot;RemoveNewLine&quot; value=&quot;This tag will be removed&quot;/&gt;
-        ///      &lt;!-- This comment should be  [rest of string was truncated]&quot;;.
+        ///    &lt;!-- LookAheadTarget and LookAheadInserted should line up with LookAheadIndent --&gt;
+        ///    &lt;appSettings&gt;
+        ///        &lt;add key=&quot;LookAheadTarget&quot; value=&quot;No indent established before this&quot; /&gt;
+        ///        &lt;!-- This should be on the same line as LookAheadTarget --&gt;
+        ///        &lt;add key=&quot;LookAheadIndent&quot; value=&quot;We should use this tag&apos;s indent&quot; /&gt;
+        ///        &lt;!-- There should be no blank line after this comment --&gt;
+        ///        &lt;add key=&quot;RemoveNewLine&quot; value=&quot;This tag will be removed&quot; / [rest of string was truncated]&quot;;.
         /// </summary>
         public static string TagFormatting_source {
             get {
@@ -247,12 +256,13 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;configuration xmlns:xct=&quot;http://schemas.microsoft.com/XML-Document-Transform&quot;&gt;
-        ///  &lt;appSettings&gt;
-        ///    &lt;add key=&quot;RemoveNewLine&quot; xct:Transform=&quot;Remove&quot; xct:Locator=&quot;Match(key)&quot;/&gt;
-        ///    &lt;add key=&quot;RemoveExtraSpace1&quot; xct:Transform=&quot;Remove&quot; xct:Locator=&quot;Match(key)&quot;/&gt;
-        ///    &lt;add key=&quot;InsertNewLine1&quot; value=&quot;This tag was added&quot; xct:Transform=&quot;InsertBefore(add[@key=&apos;InsertTarget1&apos;])&quot;/&gt;
-        ///    &lt;add key=&quot;InsertNewLine2&quot; value=&quot;This tag was added&quot; xct:Transform=&quot;InsertAfter(add[@key=&apos;InsertTarget1&apos;])&quot; [rest of string was truncated]&quot;;.
+        ///    &lt;appSettings&gt;
+        ///        &lt;add key=&quot;RemoveNewLine&quot; xct:Transform=&quot;Remove&quot; xct:Locator=&quot;Match(key)&quot; /&gt;
+        ///        &lt;add key=&quot;RemoveExtraSpace1&quot; xct:Transform=&quot;Remove&quot; xct:Locator=&quot;Match(key)&quot; /&gt;
+        ///        &lt;add key=&quot;InsertNewLine1&quot; value=&quot;This tag was added&quot; xct:Transform=&quot;InsertBefore(add[@key=&apos;InsertTarget1&apos;])&quot; /&gt;
+        ///        &lt;add key=&quot;InsertNewLine2&quot; value=&quot;This tag was added&quot; xct:Transform=&quot;InsertAfter(add[ [rest of string was truncated]&quot;;.
         /// </summary>
         public static string TagFormatting_transform {
             get {
@@ -276,12 +286,14 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;configuration&gt;
-        ///  &lt;connectionStrings&gt;
-        ///    &lt;add name=&quot;NorthwindConnectionString&quot; connectionString=&quot;Data Source=JODAVIS-DEV1;Initial Catalog=Northwind;Integrated Security=True&quot; providerName=&quot;System.Data.SqlClient&quot; /&gt;
-        ///  &lt;/connectionStrings&gt;
-        ///&lt;/configuration&gt;
-        ///.
+        ///    &lt;connectionStrings&gt;
+        ///        &lt;add name=&quot;NorthwindConnectionString&quot;
+        ///             connectionString=&quot;Data Source=JODAVIS-DEV1;Initial Catalog=Northwind;Integrated Security=True&quot;
+        ///             providerName=&quot;System.Data.SqlClient&quot; /&gt;
+        ///    &lt;/connectionStrings&gt;
+        ///&lt;/configuration&gt;.
         /// </summary>
         public static string WarningsAndErrors_source {
             get {
@@ -291,21 +303,20 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;configuration xmlns:xct=&quot;http://schemas.microsoft.com/XML-Document-Transform&quot;&gt;
-        ///  &lt;connectionStrings&gt;
-        ///    &lt;!-- BadTypeName --&gt;
-        ///    &lt;add xct:Transform=&quot;Foo&quot;/&gt;
-        ///    &lt;add xct:Transform=&quot;Match&quot;/&gt;
+        ///    &lt;connectionStrings&gt;
+        ///        &lt;!-- BadTypeName --&gt;
+        ///        &lt;add xct:Transform=&quot;Foo&quot; /&gt;
+        ///        &lt;add xct:Transform=&quot;Match&quot; /&gt;
         ///
-        ///    &lt;!-- NoValidConstructor --&gt;
-        ///    &lt;add xct:Transform=&quot;NoValidConstructor&quot;/&gt;
+        ///        &lt;!-- NoValidConstructor --&gt;
+        ///        &lt;add xct:Transform=&quot;NoValidConstructor&quot; /&gt;
         ///
-        ///    &lt;!-- BadArgumentValue --&gt;
-        ///    &lt;add foo=&quot;foo&quot; xct:Transform=&quot;SetAttributes:foo&quot;/&gt;
-        ///    &lt;add foo=&quot;foo&quot; xct:Transform=&quot;SetAttributes(foo&quot;/&gt;
-        ///    &lt;add foo=&quot;foo&quot; xct:Transform=&quot;#SetAttributes#&quot;/&gt;
-        ///
-        ///    &lt;!-- I [rest of string was truncated]&quot;;.
+        ///        &lt;!-- BadArgumentValue --&gt;
+        ///        &lt;add foo=&quot;foo&quot; xct:Transform=&quot;SetAttributes:foo&quot; /&gt;
+        ///        &lt;add foo=&quot;foo&quot; xct:Transform=&quot;SetAttributes(foo&quot; /&gt;
+        ///        &lt;add foo=&quot;foo&quot; xc [rest of string was truncated]&quot;;.
         /// </summary>
         public static string WarningsAndErrors_transform {
             get {
@@ -315,6 +326,7 @@ namespace Arbor.Xdt.Tests.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
+        ///
         ///&lt;configuration&gt;
         ///
         ///    &lt;appSettings /&gt;
@@ -331,7 +343,7 @@ namespace Arbor.Xdt.Tests.Properties {
         ///        &lt;authentication mode=&quot;Windows&quot; /&gt;
         ///        &lt;!--
         ///            The &lt;customErrors&gt; section enables configuration 
-        ///            of what  [rest of string was truncated]&quot;;.
+        ///            of wha [rest of string was truncated]&quot;;.
         /// </summary>
         public static string Web {
             get {
@@ -345,13 +357,13 @@ namespace Arbor.Xdt.Tests.Properties {
         ///&lt;!-- For more information on using web.config transformation visit http://go.microsoft.com/fwlink/?LinkId=125889 --&gt;
         ///
         ///&lt;configuration xmlns:xdt=&quot;http://schemas.microsoft.com/XML-Document-Transform&quot;&gt;
-        ///  &lt;!--
+        ///    &lt;!--
         ///    In the example below, the &quot;SetAttributes&quot; transform will change the value of 
         ///    &quot;connectionString&quot; to use &quot;ReleaseSQLServer&quot; only when the &quot;Match&quot; locator 
         ///    finds an attribute &quot;name&quot; that has a value of &quot;MyDB&quot;.
         ///    
         ///    &lt;connectionStrings&gt;
-        ///      &lt; [rest of string was truncated]&quot;;.
+        ///      [rest of string was truncated]&quot;;.
         /// </summary>
         public static string Web_Release {
             get {

@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Xml;
 
 namespace Arbor.Xdt
@@ -8,41 +5,48 @@ namespace Arbor.Xdt
     internal class XmlNodeContext
     {
         #region private data members
-        private XmlNode node;
+
         #endregion
 
-        public XmlNodeContext(XmlNode node) {
-            this.node = node;
+        public XmlNodeContext(XmlNode node)
+        {
+            Node = node;
         }
 
         #region data accessors
-        public XmlNode Node => node;
 
-        public bool HasLineInfo => node is IXmlLineInfo;
+        public XmlNode Node { get; }
 
-        public int LineNumber {
-            get {
-                var lineInfo = node as IXmlLineInfo;
-                if (lineInfo != null) {
+        public bool HasLineInfo => Node is IXmlLineInfo;
+
+        public int LineNumber
+        {
+            get
+            {
+                var lineInfo = Node as IXmlLineInfo;
+                if (lineInfo != null)
+                {
                     return lineInfo.LineNumber;
                 }
-                else {
-                    return 0;
-                }
+
+                return 0;
             }
         }
 
-        public int LinePosition {
-            get {
-                var lineInfo = node as IXmlLineInfo;
-                if (lineInfo != null) {
+        public int LinePosition
+        {
+            get
+            {
+                var lineInfo = Node as IXmlLineInfo;
+                if (lineInfo != null)
+                {
                     return lineInfo.LinePosition;
                 }
-                else {
-                    return 0;
-                }
+
+                return 0;
             }
         }
+
         #endregion
     }
 }

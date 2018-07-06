@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Arbor.Xdt
 {
-    public enum MessageType {
+    public enum MessageType
+    {
         Normal,
-        Verbose,
+        Verbose
     }
 
     public interface IXmlTransformationLogger

@@ -1,24 +1,31 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Xml;
-using System.Diagnostics;
-using RegularExpressions = System.Text.RegularExpressions;
 
 namespace Arbor.Xdt
 {
     internal static class CommonErrors
     {
-        internal static void ExpectNoArguments(XmlTransformationLogger log, string transformName, string argumentString) {
-            if (!String.IsNullOrEmpty(argumentString)) {
+        internal static void ExpectNoArguments(XmlTransformationLogger log, string transformName, string argumentString)
+        {
+            if (!string.IsNullOrEmpty(argumentString))
+            {
                 log.LogWarning(SR.XMLTRANSFORMATION_TransformDoesNotExpectArguments, transformName);
             }
         }
 
-        internal static void WarnIfMultipleTargets(XmlTransformationLogger log, string transformName, XmlNodeList targetNodes, bool applyTransformToAllTargets) {
+        internal static void WarnIfMultipleTargets(
+            XmlTransformationLogger log,
+            string transformName,
+            XmlNodeList targetNodes,
+            bool applyTransformToAllTargets)
+        {
             Debug.Assert(applyTransformToAllTargets == false);
 
-            if (targetNodes.Count > 1) {
+            if (targetNodes.Count > 1)
+            {
                 log.LogWarning(SR.XMLTRANSFORMATION_TransformOnlyAppliesOnce, transformName);
             }
         }
@@ -26,7 +33,8 @@ namespace Arbor.Xdt
 
     internal class Replace : Transform
     {
-        protected override void Apply() {
+        protected override void Apply()
+        {
             CommonErrors.ExpectNoArguments(Log, TransformNameShort, ArgumentString);
             CommonErrors.WarnIfMultipleTargets(Log, TransformNameShort, TargetNodes, ApplyTransformToAllTargetNodes);
 
@@ -39,16 +47,17 @@ namespace Arbor.Xdt
         }
     }
 
-
     internal class Remove : Transform
     {
-        protected override void Apply() {
+        protected override void Apply()
+        {
             CommonErrors.WarnIfMultipleTargets(Log, TransformNameShort, TargetNodes, ApplyTransformToAllTargetNodes);
 
             RemoveNode();
         }
 
-        protected void RemoveNode() {
+        protected void RemoveNode()
+        {
             CommonErrors.ExpectNoArguments(Log, TransformNameShort, ArgumentString);
 
             XmlNode parentNode = TargetNode.ParentNode;
@@ -60,11 +69,13 @@ namespace Arbor.Xdt
 
     internal class RemoveAll : Remove
     {
-        public RemoveAll() {
+        public RemoveAll()
+        {
             ApplyTransformToAllTargetNodes = true;
         }
 
-        protected override void Apply() {
+        protected override void Apply()
+        {
             RemoveNode();
         }
     }
@@ -72,10 +83,12 @@ namespace Arbor.Xdt
     internal class Insert : Transform
     {
         public Insert()
-            : base(TransformFlags.UseParentAsTargetNode, MissingTargetMessage.Error) {
+            : base(TransformFlags.UseParentAsTargetNode, MissingTargetMessage.Error)
+        {
         }
 
-        protected override void Apply() {
+        protected override void Apply()
+        {
             CommonErrors.ExpectNoArguments(Log, TransformNameShort, ArgumentString);
 
             TargetNode.AppendChild(TransformNode);
@@ -89,7 +102,7 @@ namespace Arbor.Xdt
         protected override void Apply()
         {
             CommonErrors.ExpectNoArguments(Log, TransformNameShort, ArgumentString);
-            if (this.TargetChildNodes == null || this.TargetChildNodes.Count == 0)
+            if (TargetChildNodes == null || TargetChildNodes.Count == 0)
             {
                 TargetNode.AppendChild(TransformNode);
                 Log.LogMessage(MessageType.Verbose, SR.XMLTRANSFORMATION_TransformMessageInsert, TransformNode.Name);
@@ -97,102 +110,144 @@ namespace Arbor.Xdt
         }
     }
 
-
-
     internal abstract class InsertBase : Transform
     {
+        private XmlElement _siblingElement;
+
         internal InsertBase()
-            : base(TransformFlags.UseParentAsTargetNode, MissingTargetMessage.Error) {
+            : base(TransformFlags.UseParentAsTargetNode, MissingTargetMessage.Error)
+        {
         }
 
-        private XmlElement siblingElement = null;
+        protected XmlElement SiblingElement
+        {
+            get
+            {
+                if (_siblingElement == null)
+                {
+                    if (Arguments == null || Arguments.Count == 0)
+                    {
+                        throw new XmlTransformationException(string.Format(
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            SR.XMLTRANSFORMATION_InsertMissingArgument,
+                            GetType().Name));
+                    }
 
-        protected XmlElement SiblingElement {
-            get {
-                if (siblingElement == null) {
-                    if (Arguments == null || Arguments.Count == 0) {
-                        throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_InsertMissingArgument, GetType().Name));
+                    if (Arguments.Count > 1)
+                    {
+                        throw new XmlTransformationException(string.Format(
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            SR.XMLTRANSFORMATION_InsertTooManyArguments,
+                            GetType().Name));
                     }
-                    else if (Arguments.Count > 1) {
-                        throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_InsertTooManyArguments, GetType().Name));
+
+                    string xpath = Arguments[0];
+                    XmlNodeList siblings = TargetNode.SelectNodes(xpath);
+                    if (siblings.Count == 0)
+                    {
+                        throw new XmlTransformationException(string.Format(
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            SR.XMLTRANSFORMATION_InsertBadXPath,
+                            xpath));
                     }
-                    else {
-                        string xpath = Arguments[0];
-                        XmlNodeList siblings = TargetNode.SelectNodes(xpath);
-                        if (siblings.Count == 0) {
-                            throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_InsertBadXPath, xpath));
-                        }
-                        else {
-                            siblingElement = siblings[0] as XmlElement;
-                            if (siblingElement == null) {
-                                throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_InsertBadXPathResult, xpath));
-                            }
-                        }
+
+                    _siblingElement = siblings[0] as XmlElement;
+                    if (_siblingElement == null)
+                    {
+                        throw new XmlTransformationException(string.Format(
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            SR.XMLTRANSFORMATION_InsertBadXPathResult,
+                            xpath));
                     }
                 }
 
-                return siblingElement;
+                return _siblingElement;
             }
         }
     }
 
     internal class InsertAfter : InsertBase
     {
-        protected override void Apply() {
+        protected override void Apply()
+        {
             SiblingElement.ParentNode.InsertAfter(TransformNode, SiblingElement);
 
-            Log.LogMessage(MessageType.Verbose, string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_TransformMessageInsert, TransformNode.Name));
+            Log.LogMessage(MessageType.Verbose,
+                string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    SR.XMLTRANSFORMATION_TransformMessageInsert,
+                    TransformNode.Name));
         }
     }
 
     internal class InsertBefore : InsertBase
     {
-        protected override void Apply() {
+        protected override void Apply()
+        {
             SiblingElement.ParentNode.InsertBefore(TransformNode, SiblingElement);
 
-            Log.LogMessage(MessageType.Verbose, string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_TransformMessageInsert, TransformNode.Name));
+            Log.LogMessage(MessageType.Verbose,
+                string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    SR.XMLTRANSFORMATION_TransformMessageInsert,
+                    TransformNode.Name));
         }
     }
 
     public class SetAttributes : AttributeTransform
     {
-        protected override void Apply() {
-            foreach (XmlAttribute transformAttribute in TransformAttributes) {
+        protected override void Apply()
+        {
+            foreach (XmlAttribute transformAttribute in TransformAttributes)
+            {
                 var targetAttribute = TargetNode.Attributes.GetNamedItem(transformAttribute.Name) as XmlAttribute;
-                if (targetAttribute != null) {
+                if (targetAttribute != null)
+                {
                     targetAttribute.Value = transformAttribute.Value;
                 }
-                else {
+                else
+                {
                     TargetNode.Attributes.Append((XmlAttribute)transformAttribute.Clone());
                 }
 
-                Log.LogMessage(MessageType.Verbose, SR.XMLTRANSFORMATION_TransformMessageSetAttribute, transformAttribute.Name);
+                Log.LogMessage(MessageType.Verbose,
+                    SR.XMLTRANSFORMATION_TransformMessageSetAttribute,
+                    transformAttribute.Name);
             }
 
-            if (TransformAttributes.Count > 0) {
-                Log.LogMessage(MessageType.Verbose, SR.XMLTRANSFORMATION_TransformMessageSetAttributes, TransformAttributes.Count);
+            if (TransformAttributes.Count > 0)
+            {
+                Log.LogMessage(MessageType.Verbose,
+                    SR.XMLTRANSFORMATION_TransformMessageSetAttributes,
+                    TransformAttributes.Count);
             }
-            else {
+            else
+            {
                 Log.LogWarning(SR.XMLTRANSFORMATION_TransformMessageNoSetAttributes);
             }
         }
     }
 
-
     public class SetTokenizedAttributeStorage
     {
-        public List<Dictionary<string, string>> DictionaryList { get; set; }
-        public string TokenFormat { get; set; }
-        public bool EnableTokenizeParameters { get; set; }
-        public bool UseXpathToFormParameter { get; set; }
-        public SetTokenizedAttributeStorage() : this(4) { }
+        public SetTokenizedAttributeStorage() : this(4)
+        {
+        }
+
         public SetTokenizedAttributeStorage(int capacity)
         {
             DictionaryList = new List<Dictionary<string, string>>(capacity);
-            TokenFormat = string.Concat("$(ReplacableToken_#(", SetTokenizedAttributes.ParameterAttribute, ")_#(", SetTokenizedAttributes.TokenNumber, "))");
+            TokenFormat = string.Concat("$(ReplacableToken_#(",
+                SetTokenizedAttributes.ParameterAttribute,
+                ")_#(",
+                SetTokenizedAttributes.TokenNumber,
+                "))");
             EnableTokenizeParameters = false;
             UseXpathToFormParameter = true;
         }
+
+        public List<Dictionary<string, string>> DictionaryList { get; }
+        public string TokenFormat { get; }
+        public bool EnableTokenizeParameters { get; }
+        public bool UseXpathToFormParameter { get; }
     }
 
     /// <summary>
@@ -202,9 +257,6 @@ namespace Arbor.Xdt
     /// </summary>
     public class SetTokenizedAttributes : AttributeTransform
     {
-
-        private SetTokenizedAttributeStorage storageDictionary = null;
-        private bool fInitStorageDictionary = false;
         public static readonly string Token = "Token";
         public static readonly string TokenNumber = "TokenNumber";
         public static readonly string XPathWithIndex = "XPathWithIndex";
@@ -212,19 +264,67 @@ namespace Arbor.Xdt
         public static readonly string XpathLocator = "XpathLocator";
         public static readonly string XPathWithLocator = "XPathWithLocator";
 
-        private XmlAttribute tokenizeValueCurrentXmlAttribute = null;
+        private static System.Text.RegularExpressions.Regex _sDirRegex;
+        private static System.Text.RegularExpressions.Regex _sParentAttribRegex;
+        private static System.Text.RegularExpressions.Regex _sTokenFormatRegex;
+        private bool _fInitStorageDictionary;
 
-    
+        private SetTokenizedAttributeStorage _storageDictionary;
+
+        private XmlAttribute _tokenizeValueCurrentXmlAttribute;
+
         protected SetTokenizedAttributeStorage TransformStorage
         {
             get
             {
-                if (storageDictionary == null && !fInitStorageDictionary)
+                if (_storageDictionary == null && !_fInitStorageDictionary)
                 {
-                    storageDictionary = GetService<SetTokenizedAttributeStorage>();
-                    fInitStorageDictionary = true;
+                    _storageDictionary = GetService<SetTokenizedAttributeStorage>();
+                    _fInitStorageDictionary = true;
                 }
-                return storageDictionary;
+
+                return _storageDictionary;
+            }
+        }
+
+        // Directory registrory
+        internal static System.Text.RegularExpressions.Regex DirRegex
+        {
+            get
+            {
+                if (_sDirRegex == null)
+                {
+                    _sDirRegex = new System.Text.RegularExpressions.Regex(
+                        @"\G\{%(\s*(?<attrname>\w+(?=\W))(\s*(?<equal>=)\s*'(?<attrval>[^']*)'|\s*(?<equal>=)\s*(?<attrval>[^\s%>]*)|(?<equal>)(?<attrval>\s*?)))*\s*?%\}");
+                }
+
+                return _sDirRegex;
+            }
+        }
+
+        internal static System.Text.RegularExpressions.Regex ParentAttributeRegex
+        {
+            get
+            {
+                if (_sParentAttribRegex == null)
+                {
+                    _sParentAttribRegex = new System.Text.RegularExpressions.Regex(@"\G\$\((?<tagname>[\w:\.]+)\)");
+                }
+
+                return _sParentAttribRegex;
+            }
+        }
+
+        internal static System.Text.RegularExpressions.Regex TokenFormatRegex
+        {
+            get
+            {
+                if (_sTokenFormatRegex == null)
+                {
+                    _sTokenFormatRegex = new System.Text.RegularExpressions.Regex(@"\G\#\((?<tagname>[\w:\.]+)\)");
+                }
+
+                return _sTokenFormatRegex;
             }
         }
 
@@ -232,7 +332,7 @@ namespace Arbor.Xdt
         {
             bool fTokenizeParameter = false;
             SetTokenizedAttributeStorage storage = TransformStorage;
-            List<Dictionary<string, string> > parameters = null;
+            List<Dictionary<string, string>> parameters = null;
 
             if (storage != null)
             {
@@ -260,12 +360,16 @@ namespace Arbor.Xdt
                     TargetNode.Attributes.Append(newAttribute);
                 }
 
-                Log.LogMessage(MessageType.Verbose, SR.XMLTRANSFORMATION_TransformMessageSetAttribute, transformAttribute.Name);
+                Log.LogMessage(MessageType.Verbose,
+                    SR.XMLTRANSFORMATION_TransformMessageSetAttribute,
+                    transformAttribute.Name);
             }
 
             if (TransformAttributes.Count > 0)
             {
-                Log.LogMessage(MessageType.Verbose, SR.XMLTRANSFORMATION_TransformMessageSetAttributes, TransformAttributes.Count);
+                Log.LogMessage(MessageType.Verbose,
+                    SR.XMLTRANSFORMATION_TransformMessageSetAttributes,
+                    TransformAttributes.Count);
             }
             else
             {
@@ -273,93 +377,54 @@ namespace Arbor.Xdt
             }
         }
 
-
-        static private RegularExpressions.Regex s_dirRegex = null;
-        static private RegularExpressions.Regex s_parentAttribRegex = null;
-        static private RegularExpressions.Regex s_tokenFormatRegex = null;
-
-        // Directory registrory
-        static internal RegularExpressions.Regex DirRegex
-        {
-            get
-            {
-                if (s_dirRegex == null)
-                {
-                    s_dirRegex = new RegularExpressions.Regex(@"\G\{%(\s*(?<attrname>\w+(?=\W))(\s*(?<equal>=)\s*'(?<attrval>[^']*)'|\s*(?<equal>=)\s*(?<attrval>[^\s%>]*)|(?<equal>)(?<attrval>\s*?)))*\s*?%\}");
-                }
-                return s_dirRegex;
-            }
-        }
-
-        static internal RegularExpressions.Regex ParentAttributeRegex
-        {
-            get
-            {
-                if (s_parentAttribRegex == null)
-                {
-                    s_parentAttribRegex = new RegularExpressions.Regex(@"\G\$\((?<tagname>[\w:\.]+)\)"); 
-                }
-                return s_parentAttribRegex;
-            }
-        }
-
-        static internal RegularExpressions.Regex TokenFormatRegex
-        {
-            get
-            {
-                if (s_tokenFormatRegex == null)
-                {
-                    s_tokenFormatRegex = new RegularExpressions.Regex(@"\G\#\((?<tagname>[\w:\.]+)\)");
-                }
-                return s_tokenFormatRegex;
-            }
-        }
-
-        protected delegate string GetValueCallback(string key);
-
         protected string GetAttributeValue(string attributeName)
         {
             string dataValue = null;
             var sourceAttribute = TargetNode.Attributes.GetNamedItem(attributeName) as XmlAttribute;
             if (sourceAttribute == null)
             {
-                if (string.Compare(attributeName, tokenizeValueCurrentXmlAttribute.Name, StringComparison.OrdinalIgnoreCase) != 0)
-                {   // if it is other attributename, we fall back to the current now 
+                if (string.Compare(attributeName,
+                        _tokenizeValueCurrentXmlAttribute.Name,
+                        StringComparison.OrdinalIgnoreCase) != 0)
+                {
+                    // if it is other attributename, we fall back to the current now
                     sourceAttribute = TransformNode.Attributes.GetNamedItem(attributeName) as XmlAttribute;
                 }
             }
+
             if (sourceAttribute != null)
             {
                 dataValue = sourceAttribute.Value;
             }
+
             return dataValue;
         }
 
-
         //DirRegex treat single quote differently
-        protected string EscapeDirRegexSpecialCharacter(string value, bool escape)
+        private static string EscapeDirRegexSpecialCharacter(string value, bool escape)
         {
             if (escape)
             {
                 return value.Replace("'", "&apos;");
             }
-            else
-            {
-                return value.Replace("&apos;", "'");
-            }
+
+            return value.Replace("&apos;", "'");
         }
 
-
-        protected static string SubstituteKownValue(string transformValue, RegularExpressions.Regex patternRegex, string patternPrefix,  GetValueCallback getValueDelegate )
+        protected static string SubstituteKownValue(
+            string transformValue,
+            System.Text.RegularExpressions.Regex patternRegex,
+            string patternPrefix,
+            GetValueCallback getValueDelegate)
         {
             int position = 0;
-            var matchsExpr = new List<RegularExpressions.Match>();
+            var matchsExpr = new List<System.Text.RegularExpressions.Match>();
             do
             {
                 position = transformValue.IndexOf(patternPrefix, position, StringComparison.OrdinalIgnoreCase);
                 if (position > -1)
                 {
-                    RegularExpressions.Match match = patternRegex.Match(transformValue, position);
+                    System.Text.RegularExpressions.Match match = patternRegex.Match(transformValue, position);
                     // Add the successful match to collection
                     if (match.Success)
                     {
@@ -379,10 +444,10 @@ namespace Arbor.Xdt
                 strbuilder.Remove(0, strbuilder.Length);
                 position = 0;
                 int index = 0;
-                foreach (RegularExpressions.Match match in matchsExpr)
+                foreach (System.Text.RegularExpressions.Match match in matchsExpr)
                 {
                     strbuilder.Append(transformValue.Substring(position, match.Index - position));
-                    RegularExpressions.Capture captureTagName = match.Groups["tagname"];
+                    System.Text.RegularExpressions.Capture captureTagName = match.Groups["tagname"];
                     string attributeName = captureTagName.Value;
 
                     string newValue = getValueDelegate(attributeName);
@@ -396,9 +461,11 @@ namespace Arbor.Xdt
                         // keep original value
                         strbuilder.Append(match.Value);
                     }
+
                     position = match.Index + match.Length;
                     index++;
                 }
+
                 strbuilder.Append(transformValue.Substring(position));
 
                 transformValue = strbuilder.ToString();
@@ -425,23 +492,30 @@ namespace Arbor.Xdt
                     {
                         foreach (string match in locators)
                         {
-                            string val = this.GetAttributeValue(match);
+                            string val = GetAttributeValue(match);
                             if (!string.IsNullOrEmpty(val))
                             {
                                 if (identifier.Length != 0)
                                 {
                                     identifier.Append(" and ");
                                 }
-                                identifier.Append(String.Format(System.Globalization.CultureInfo.InvariantCulture, "@{0}='{1}'", match, val));
+
+                                identifier.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                                    "@{0}='{1}'",
+                                    match,
+                                    val));
                             }
                             else
                             {
-                                throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_MatchAttributeDoesNotExist, match));
+                                throw new XmlTransformationException(string.Format(
+                                    System.Globalization.CultureInfo.CurrentCulture,
+                                    SR.XMLTRANSFORMATION_MatchAttributeDoesNotExist,
+                                    match));
                             }
                         }
                     }
 
-                    if (identifier.Length == 0) 
+                    if (identifier.Length == 0)
                     {
                         for (int i = 0; i < TargetNodes.Count; i++)
                         {
@@ -453,10 +527,13 @@ namespace Arbor.Xdt
                             }
                         }
                     }
+
                     pathToNode = string.Concat(pathToNode, "[", identifier.ToString(), "]");
                 }
+
                 path = string.Concat(pathToNode, "/@", xmlAttribute.Name);
             }
+
             return path;
         }
 
@@ -466,23 +543,28 @@ namespace Arbor.Xdt
             {
                 return null;
             }
+
             string parentPath = GetXPathToNode(xmlNode.ParentNode);
             return string.Concat(parentPath, "/", xmlNode.Name);
         }
 
-        private string TokenizeValue(XmlAttribute targetAttribute, 
-                                     XmlAttribute transformAttribute, 
-                                     bool fTokenizeParameter, 
-                                     List<Dictionary<string, string>> parameters)
+        private string TokenizeValue(
+            XmlAttribute targetAttribute,
+            XmlAttribute transformAttribute,
+            bool fTokenizeParameter,
+            List<Dictionary<string, string>> parameters)
         {
             Debug.Assert(!fTokenizeParameter || parameters != null);
 
-            tokenizeValueCurrentXmlAttribute = transformAttribute;
+            _tokenizeValueCurrentXmlAttribute = transformAttribute;
             string transformValue = transformAttribute.Value;
             string xpath = GetXPathToAttribute(targetAttribute);
 
             //subsitute the know value first in the transformAttribute
-            transformValue = SubstituteKownValue(transformValue, ParentAttributeRegex, "$(", delegate(string key) { return EscapeDirRegexSpecialCharacter(GetAttributeValue(key), true); });
+            transformValue = SubstituteKownValue(transformValue,
+                ParentAttributeRegex,
+                "$(",
+                delegate(string key) { return EscapeDirRegexSpecialCharacter(GetAttributeValue(key), true); });
 
             // then use the directive to parse the value. --- if TokenizeParameterize is enable
             if (fTokenizeParameter && parameters != null)
@@ -490,14 +572,14 @@ namespace Arbor.Xdt
                 int position = 0;
                 var strbuilder = new StringBuilder(transformValue.Length);
                 position = 0;
-                var matchs = new List<RegularExpressions.Match>();
+                var matchs = new List<System.Text.RegularExpressions.Match>();
 
                 do
                 {
                     position = transformValue.IndexOf("{%", position, StringComparison.OrdinalIgnoreCase);
                     if (position > -1)
                     {
-                        RegularExpressions.Match match = DirRegex.Match(transformValue, position);
+                        System.Text.RegularExpressions.Match match = DirRegex.Match(transformValue, position);
                         // Add the successful match to collection
                         if (match.Success)
                         {
@@ -517,17 +599,19 @@ namespace Arbor.Xdt
                     position = 0;
                     int index = 0;
 
-                    foreach (RegularExpressions.Match match in matchs)
+                    foreach (System.Text.RegularExpressions.Match match in matchs)
                     {
                         strbuilder.Append(transformValue.Substring(position, match.Index - position));
-                        RegularExpressions.CaptureCollection attrnames = match.Groups["attrname"].Captures;
+                        System.Text.RegularExpressions.CaptureCollection attrnames = match.Groups["attrname"].Captures;
                         if (attrnames != null && attrnames.Count > 0)
                         {
-                            RegularExpressions.CaptureCollection attrvalues = match.Groups["attrval"].Captures;
+                            System.Text.RegularExpressions.CaptureCollection attrvalues =
+                                match.Groups["attrval"].Captures;
                             var paramDictionary = new Dictionary<string, string>(4, StringComparer.OrdinalIgnoreCase);
 
                             paramDictionary[XPathWithIndex] = xpath;
-                            paramDictionary[TokenNumber] = index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                            paramDictionary[TokenNumber] =
+                                index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
                             // Get the key-value pare of the in the tranform form
                             for (int i = 0; i < attrnames.Count; i++)
@@ -538,6 +622,7 @@ namespace Arbor.Xdt
                                 {
                                     val = EscapeDirRegexSpecialCharacter(attrvalues[i].Value, false);
                                 }
+
                                 paramDictionary[name] = val;
                             }
 
@@ -545,8 +630,9 @@ namespace Arbor.Xdt
                             string strTokenFormat = null;
                             if (!paramDictionary.TryGetValue(Token, out strTokenFormat))
                             {
-                                strTokenFormat = storageDictionary.TokenFormat;
+                                strTokenFormat = _storageDictionary.TokenFormat;
                             }
+
                             if (!string.IsNullOrEmpty(strTokenFormat))
                             {
                                 paramDictionary[Token] = strTokenFormat;
@@ -561,12 +647,17 @@ namespace Arbor.Xdt
                                 // if token format contain the #(),we replace with the known value such that it is unique identify
                                 // for example, intokenizeTransformXml.cs, default token format is
                                 // string.Concat("$(ReplacableToken_#(", SetTokenizedAttributes.ParameterAttribute, ")_#(", SetTokenizedAttributes.TokenNumber, "))");
-                                // which ParameterAttribute will be translate to parameterDictionary["parameter"} and TokenNumber will be translate to parameter 
+                                // which ParameterAttribute will be translate to parameterDictionary["parameter"} and TokenNumber will be translate to parameter
                                 // parameterDictionary["TokenNumber"]
                                 string keyindex = keys[i];
                                 string val = paramDictionary[keyindex];
-                                string newVal = SubstituteKownValue(val, TokenFormatRegex, "#(",
-                                        delegate(string key) { return paramDictionary.ContainsKey(key) ? paramDictionary[key] : null; });
+                                string newVal = SubstituteKownValue(val,
+                                    TokenFormatRegex,
+                                    "#(",
+                                    delegate(string key)
+                                    {
+                                        return paramDictionary.ContainsKey(key) ? paramDictionary[key] : null;
+                                    });
 
                                 paramDictionary[keyindex] = newVal;
                             }
@@ -576,44 +667,58 @@ namespace Arbor.Xdt
                                 // Replace with token
                                 strbuilder.Append(strTokenFormat);
                             }
+
                             string attributeLocator;
-                            if (paramDictionary.TryGetValue(XpathLocator, out attributeLocator) && !string.IsNullOrEmpty(attributeLocator))
+                            if (paramDictionary.TryGetValue(XpathLocator, out attributeLocator) &&
+                                !string.IsNullOrEmpty(attributeLocator))
                             {
-                                IList<string> locators =  XmlArgumentUtility.SplitArguments(attributeLocator);
-                                string xpathwithlocator = GetXPathToAttribute(targetAttribute,locators);
+                                IList<string> locators = XmlArgumentUtility.SplitArguments(attributeLocator);
+                                string xpathwithlocator = GetXPathToAttribute(targetAttribute, locators);
                                 if (!string.IsNullOrEmpty(xpathwithlocator))
                                 {
                                     paramDictionary[XPathWithLocator] = xpathwithlocator;
                                 }
                             }
+
                             parameters.Add(paramDictionary);
                         }
 
                         position = match.Index + match.Length;
                         index++;
                     }
+
                     strbuilder.Append(transformValue.Substring(position));
                     transformValue = strbuilder.ToString();
                 }
             }
+
             return transformValue;
         }
 
+        protected delegate string GetValueCallback(string key);
     }
 
     public class RemoveAttributes : AttributeTransform
     {
-        protected override void Apply() {
-            foreach (XmlAttribute attribute in TargetAttributes) {
+        protected override void Apply()
+        {
+            foreach (XmlAttribute attribute in TargetAttributes)
+            {
                 TargetNode.Attributes.Remove(attribute);
 
-                Log.LogMessage(MessageType.Verbose, SR.XMLTRANSFORMATION_TransformMessageRemoveAttribute, attribute.Name);
+                Log.LogMessage(MessageType.Verbose,
+                    SR.XMLTRANSFORMATION_TransformMessageRemoveAttribute,
+                    attribute.Name);
             }
 
-            if (TargetAttributes.Count > 0) {
-                Log.LogMessage(MessageType.Verbose, SR.XMLTRANSFORMATION_TransformMessageRemoveAttributes, TargetAttributes.Count);
+            if (TargetAttributes.Count > 0)
+            {
+                Log.LogMessage(MessageType.Verbose,
+                    SR.XMLTRANSFORMATION_TransformMessageRemoveAttributes,
+                    TargetAttributes.Count);
             }
-            else {
+            else
+            {
                 Log.LogWarning(TargetNode, SR.XMLTRANSFORMATION_TransformMessageNoRemoveAttributes);
             }
         }

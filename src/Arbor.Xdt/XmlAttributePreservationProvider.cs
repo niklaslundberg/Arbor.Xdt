@@ -1,39 +1,66 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
 using System.Diagnostics;
-using System.Xml;
+using System.IO;
+using System.Text;
 
 namespace Arbor.Xdt
 {
     internal class XmlAttributePreservationProvider : IDisposable
     {
-        private StreamReader streamReader;
-        private PositionTrackingTextReader reader;
+        private PositionTrackingTextReader _reader;
+        private StreamReader _streamReader;
+        private FileStream _fileStream;
 
-        public XmlAttributePreservationProvider(string fileName) {
-            streamReader = new StreamReader(File.OpenRead(fileName));
-            reader = new PositionTrackingTextReader(streamReader);
+        public XmlAttributePreservationProvider(string fileName)
+        {
+            _fileStream = File.OpenRead(fileName);
+            _streamReader = new StreamReader(_fileStream);
+            _reader = new PositionTrackingTextReader(_streamReader);
         }
 
-        public XmlAttributePreservationDict GetDictAtPosition(int lineNumber, int linePosition) {
-            if (reader.ReadToPosition(lineNumber, linePosition)) {
-                Debug.Assert((char)reader.Peek() == '<');
+        public void Dispose()
+        {
+            if (_streamReader != null)
+            {
+                _streamReader.Close();
+                _streamReader = null;
+            }
+
+            if (_reader != null)
+            {
+                _reader.Dispose();
+                _reader = null;
+            }
+
+            if (_fileStream != null)
+            {
+                _fileStream.Dispose();
+                _fileStream = null;
+            }
+        }
+
+        public XmlAttributePreservationDict GetDictAtPosition(int lineNumber, int linePosition)
+        {
+            if (_reader.ReadToPosition(lineNumber, linePosition))
+            {
+                Debug.Assert((char)_reader.Peek() == '<');
 
                 var sb = new StringBuilder();
                 int character;
                 bool inAttribute = false;
-                do {
-                    character = reader.Read();
-                    if (character == '\"'){
+                do
+                {
+                    character = _reader.Read();
+                    if (character == '\"')
+                    {
                         inAttribute = !inAttribute;
                     }
-                    sb.Append((char)character);
-                }
-                while (character > 0 && ((char)character != '>' || inAttribute));
 
-                if (character > 0) {
+                    sb.Append((char)character);
+                } while (character > 0 && ((char)character != '>' || inAttribute));
+
+                if (character > 0)
+                {
                     var dict = new XmlAttributePreservationDict();
                     dict.ReadPreservationInfo(sb.ToString());
                     return dict;
@@ -50,24 +77,10 @@ namespace Arbor.Xdt
             GC.SuppressFinalize(this);
         }
 
-        public void Dispose()
-        {
-            if (streamReader != null)
-            {
-                streamReader.Close();
-                streamReader = null;
-            }
-            if (reader != null)
-            {
-                reader.Dispose();
-                reader = null;
-            }
-        }
-
         ~XmlAttributePreservationProvider()
         {
-            Debug.Fail("cal dispose please");
             Dispose();
+            Debug.Fail("cal dispose please");
         }
     }
 }

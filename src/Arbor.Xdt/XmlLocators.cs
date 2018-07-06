@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Xml;
 using System.Globalization;
+using System.Xml;
 
 namespace Arbor.Xdt
 {
@@ -10,38 +8,54 @@ namespace Arbor.Xdt
     {
         // Uses all the default behavior
 
-        private static DefaultLocator instance = null;
-        internal static DefaultLocator Instance {
-            get {
-                if (instance == null) {
-                    instance = new DefaultLocator();
+        private static DefaultLocator _instance;
+
+        internal static DefaultLocator Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new DefaultLocator();
                 }
-                return instance;
+
+                return _instance;
             }
         }
     }
 
     public sealed class Match : Locator
     {
-        protected override string ConstructPredicate() {
+        protected override string ConstructPredicate()
+        {
             EnsureArguments(1);
 
             string keyPredicate = null;
 
-            foreach (string key in Arguments) {
+            foreach (string key in Arguments)
+            {
                 var keyAttribute = CurrentElement.Attributes.GetNamedItem(key) as XmlAttribute;
 
-                if (keyAttribute != null) {
-                    string keySegment = String.Format(CultureInfo.InvariantCulture, "@{0}='{1}'", keyAttribute.Name, keyAttribute.Value);
-                    if (keyPredicate == null) {
+                if (keyAttribute != null)
+                {
+                    string keySegment = string.Format(CultureInfo.InvariantCulture,
+                        "@{0}='{1}'",
+                        keyAttribute.Name,
+                        keyAttribute.Value);
+                    if (keyPredicate == null)
+                    {
                         keyPredicate = keySegment;
                     }
-                    else {
-                        keyPredicate = String.Concat(keyPredicate, " and ", keySegment);
+                    else
+                    {
+                        keyPredicate = string.Concat(keyPredicate, " and ", keySegment);
                     }
                 }
-                else {
-                    throw new XmlTransformationException(string.Format(System.Globalization.CultureInfo.CurrentCulture,SR.XMLTRANSFORMATION_MatchAttributeDoesNotExist, key));
+                else
+                {
+                    throw new XmlTransformationException(string.Format(CultureInfo.CurrentCulture,
+                        SR.XMLTRANSFORMATION_MatchAttributeDoesNotExist,
+                        key));
                 }
             }
 
@@ -51,7 +65,8 @@ namespace Arbor.Xdt
 
     public sealed class Condition : Locator
     {
-        protected override string ConstructPredicate() {
+        protected override string ConstructPredicate()
+        {
             EnsureArguments(1, 1);
 
             return Arguments[0];
@@ -62,11 +77,13 @@ namespace Arbor.Xdt
     {
         protected override string ParentPath => ConstructPath();
 
-        protected override string ConstructPath() {
+        protected override string ConstructPath()
+        {
             EnsureArguments(1, 1);
 
             string xpath = Arguments[0];
-            if (!xpath.StartsWith("/", StringComparison.Ordinal)) {
+            if (!xpath.StartsWith("/", StringComparison.Ordinal))
+            {
                 // Relative XPath
                 xpath = AppendStep(base.ParentPath, NextStepNodeTest);
                 xpath = AppendStep(xpath, Arguments[0]);

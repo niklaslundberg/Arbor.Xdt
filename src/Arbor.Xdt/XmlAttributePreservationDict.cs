@@ -1,59 +1,35 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Xml;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using System.IO;
+using System.Xml;
 
 namespace Arbor.Xdt
 {
     internal class XmlAttributePreservationDict
     {
-        #region Private data members
-        private List<string> orderedAttributes = new List<string>();
-        private Dictionary<string, string> leadingSpaces = new Dictionary<string, string>();
-
-        private string attributeNewLineString = null;
-        private bool computedOneAttributePerLine = false;
-        private bool oneAttributePerLine = false;
-        #endregion
-
-        private bool OneAttributePerLine {
-            get {
-                if (!computedOneAttributePerLine) {
-                    computedOneAttributePerLine = true;
-                    oneAttributePerLine = ComputeOneAttributePerLine();
+        private bool OneAttributePerLine
+        {
+            get
+            {
+                if (!_computedOneAttributePerLine)
+                {
+                    _computedOneAttributePerLine = true;
+                    _oneAttributePerLine = ComputeOneAttributePerLine();
                 }
-                return oneAttributePerLine;
+
+                return _oneAttributePerLine;
             }
         }
 
-        internal void ReadPreservationInfo(string elementStartTag) {
-            Debug.Assert(elementStartTag.StartsWith("<", StringComparison.Ordinal) && elementStartTag.EndsWith(">", StringComparison.Ordinal), "Expected string containing exactly a single tag");
-            var whitespaceReader = new WhitespaceTrackingTextReader(new StringReader(elementStartTag));
-
-            int lastCharacter = EnumerateAttributes(elementStartTag, 
-                (int line, int linePosition, string attributeName) => 
-                {
-                    orderedAttributes.Add(attributeName);
-                    if (whitespaceReader.ReadToPosition(line, linePosition))
-                    {
-                        leadingSpaces.Add(attributeName, whitespaceReader.PrecedingWhitespace);
-                    }
-                    else
-                    {
-                        Debug.Fail("Couldn't get leading whitespace for attribute");
-                    }
-                }
-                );
-
-            if (whitespaceReader.ReadToPosition(lastCharacter)) {
-                leadingSpaces.Add(String.Empty, whitespaceReader.PrecedingWhitespace);
+        public string GetAttributeNewLineString(XmlFormatter formatter)
+        {
+            if (_attributeNewLineString == null)
+            {
+                _attributeNewLineString = ComputeAttributeNewLineString(formatter);
             }
-            else {
-                Debug.Fail("Couldn't get trailing whitespace for tag");
-            }
+
+            return _attributeNewLineString;
         }
 
         private int EnumerateAttributes(string elementStartTag, Action<int, int, string> onAttributeSpotted)
@@ -62,7 +38,7 @@ namespace Arbor.Xdt
             string xmlDocString = elementStartTag;
             if (!selfClosed)
             {
-                xmlDocString = elementStartTag.Substring(0, elementStartTag.Length-1) + "/>" ;
+                xmlDocString = elementStartTag.Substring(0, elementStartTag.Length - 1) + "/>";
             }
 
             var xmlReader = new XmlTextReader(new StringReader(xmlDocString));
@@ -82,69 +58,195 @@ namespace Arbor.Xdt
             {
                 lastCharacter--;
             }
+
             return lastCharacter;
         }
 
-        internal void WritePreservedAttributes(XmlAttributePreservingWriter writer, XmlAttributeCollection attributes) {
-            string oldNewLineString = null;
-            if (attributeNewLineString != null) {
-                oldNewLineString = writer.SetAttributeNewLineString(attributeNewLineString);
+        private bool ComputeOneAttributePerLine()
+        {
+            if (_leadingSpaces.Count > 1)
+            {
+                // If there is a newline between each pair of attributes, then
+                // we'll continue putting newlines between all attributes. If
+                // there's no newline between one pair, then we won't.
+                bool firstAttribute = true;
+                foreach (string attributeName in _orderedAttributes)
+                {
+                    // The space in front of the first attribute doesn't count,
+                    // because that space isn't between attributes.
+                    if (firstAttribute)
+                    {
+                        firstAttribute = false;
+                    }
+                    else if (_leadingSpaces.ContainsKey(attributeName) &&
+                             !ContainsNewLine(_leadingSpaces[attributeName]))
+                    {
+                        // This means there are two attributes on one line
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
-            try {
-                foreach (string attributeName in orderedAttributes) {
+            // If there aren't at least two original attributes on this
+            // tag, then it's not possible to tell if more than one would
+            // be on a line. Default to more than one per line.
+            // TODO(jodavis): Should we look at sibling tags to decide?
+            return false;
+        }
+
+        private bool ContainsNewLine(string space)
+        {
+            return space.IndexOf("\n", StringComparison.Ordinal) >= 0;
+        }
+
+        private string ComputeAttributeNewLineString(XmlFormatter formatter)
+        {
+            string lookAheadString = LookAheadForNewLineString();
+            if (lookAheadString != null)
+            {
+                return lookAheadString;
+            }
+
+            if (formatter != null)
+            {
+                return formatter.CurrentAttributeIndent;
+            }
+
+            return null;
+        }
+
+        private string LookAheadForNewLineString()
+        {
+            foreach (string space in _leadingSpaces.Values)
+            {
+                if (ContainsNewLine(space))
+                {
+                    return space;
+                }
+            }
+
+            return null;
+        }
+
+        private void EnsureAttributeNewLineString(XmlFormatter formatter)
+        {
+            GetAttributeNewLineString(formatter);
+        }
+
+        internal void ReadPreservationInfo(string elementStartTag)
+        {
+            Debug.Assert(
+                elementStartTag.StartsWith("<", StringComparison.Ordinal) &&
+                elementStartTag.EndsWith(">", StringComparison.Ordinal),
+                "Expected string containing exactly a single tag");
+            var whitespaceReader = new WhitespaceTrackingTextReader(new StringReader(elementStartTag));
+
+            int lastCharacter = EnumerateAttributes(elementStartTag,
+                (line, linePosition, attributeName) =>
+                {
+                    _orderedAttributes.Add(attributeName);
+                    if (whitespaceReader.ReadToPosition(line, linePosition))
+                    {
+                        _leadingSpaces.Add(attributeName, whitespaceReader.PrecedingWhitespace);
+                    }
+                    else
+                    {
+                        Debug.Fail("Couldn't get leading whitespace for attribute");
+                    }
+                }
+            );
+
+            if (whitespaceReader.ReadToPosition(lastCharacter))
+            {
+                _leadingSpaces.Add(string.Empty, whitespaceReader.PrecedingWhitespace);
+            }
+            else
+            {
+                Debug.Fail("Couldn't get trailing whitespace for tag");
+            }
+        }
+
+        internal void WritePreservedAttributes(XmlAttributePreservingWriter writer, XmlAttributeCollection attributes)
+        {
+            string oldNewLineString = null;
+            if (_attributeNewLineString != null)
+            {
+                oldNewLineString = writer.SetAttributeNewLineString(_attributeNewLineString);
+            }
+
+            try
+            {
+                foreach (string attributeName in _orderedAttributes)
+                {
                     XmlAttribute attr = attributes[attributeName];
-                    if (attr != null) {
-                        if (leadingSpaces.ContainsKey(attributeName)) {
-                            writer.WriteAttributeWhitespace(leadingSpaces[attributeName]);
+                    if (attr != null)
+                    {
+                        if (_leadingSpaces.ContainsKey(attributeName))
+                        {
+                            writer.WriteAttributeWhitespace(_leadingSpaces[attributeName]);
                         }
 
                         attr.WriteTo(writer);
                     }
                 }
 
-                if (leadingSpaces.ContainsKey(String.Empty)) {
-                    writer.WriteAttributeTrailingWhitespace(leadingSpaces[String.Empty]);
+                if (_leadingSpaces.ContainsKey(string.Empty))
+                {
+                    writer.WriteAttributeTrailingWhitespace(_leadingSpaces[string.Empty]);
                 }
             }
-            finally {
-                if (oldNewLineString != null) {
+            finally
+            {
+                if (oldNewLineString != null)
+                {
                     writer.SetAttributeNewLineString(oldNewLineString);
                 }
             }
         }
 
-        internal void UpdatePreservationInfo(XmlAttributeCollection updatedAttributes, XmlFormatter formatter) {
-            if (updatedAttributes.Count == 0) {
-                if (orderedAttributes.Count > 0) {
+        internal void UpdatePreservationInfo(XmlAttributeCollection updatedAttributes, XmlFormatter formatter)
+        {
+            if (updatedAttributes.Count == 0)
+            {
+                if (_orderedAttributes.Count > 0)
+                {
                     // All attributes were removed, clear preservation info
-                    leadingSpaces.Clear();
-                    orderedAttributes.Clear();
+                    _leadingSpaces.Clear();
+                    _orderedAttributes.Clear();
                 }
             }
-            else {
+            else
+            {
                 var attributeExists = new Dictionary<string, bool>();
 
                 // Prepopulate the list with attributes that existed before
-                foreach (string attributeName in orderedAttributes) {
+                foreach (string attributeName in _orderedAttributes)
+                {
                     attributeExists[attributeName] = false;
                 }
 
                 // Update the list with attributes that exist now
-                foreach (XmlAttribute attribute in updatedAttributes) {
-                    if (!attributeExists.ContainsKey(attribute.Name)) {
-                        orderedAttributes.Add(attribute.Name);
+                foreach (XmlAttribute attribute in updatedAttributes)
+                {
+                    if (!attributeExists.ContainsKey(attribute.Name))
+                    {
+                        _orderedAttributes.Add(attribute.Name);
                     }
+
                     attributeExists[attribute.Name] = true;
                 }
 
                 bool firstAttribute = true;
                 string keepLeadingWhitespace = null;
-                foreach (string key in orderedAttributes) {
+                foreach (string key in _orderedAttributes)
+                {
                     bool exists = attributeExists[key];
 
                     // Handle removal
-                    if (!exists) {
+                    if (!exists)
+                    {
                         // We need to figure out whether to keep the leading
                         // or trailing whitespace. The logic is:
                         //   1. The whitespace before the first attribute is
@@ -158,42 +260,53 @@ namespace Arbor.Xdt
                         // In order to remove trailing space, we have to 
                         // remove the leading space of the next attribute, so
                         // we store this leading space to replace the next.
-                        if (leadingSpaces.ContainsKey(key)) {
-                            string leadingSpace = leadingSpaces[key];
-                            if (firstAttribute) {
-                                if (keepLeadingWhitespace == null) {
+                        if (_leadingSpaces.ContainsKey(key))
+                        {
+                            string leadingSpace = _leadingSpaces[key];
+                            if (firstAttribute)
+                            {
+                                if (keepLeadingWhitespace == null)
+                                {
                                     keepLeadingWhitespace = leadingSpace;
                                 }
                             }
-                            else if (ContainsNewLine(leadingSpace)) {
+                            else if (ContainsNewLine(leadingSpace))
+                            {
                                 keepLeadingWhitespace = leadingSpace;
                             }
 
-                            leadingSpaces.Remove(key);
+                            _leadingSpaces.Remove(key);
                         }
                     }
 
-                    else if (keepLeadingWhitespace != null) {
+                    else if (keepLeadingWhitespace != null)
+                    {
                         // Exception to rule #2 above: Don't replace an existing
                         // newline with one that was removed
-                        if (firstAttribute || !leadingSpaces.ContainsKey(key) || !ContainsNewLine(leadingSpaces[key])) {
-                            leadingSpaces[key] = keepLeadingWhitespace;
+                        if (firstAttribute || !_leadingSpaces.ContainsKey(key) || !ContainsNewLine(_leadingSpaces[key]))
+                        {
+                            _leadingSpaces[key] = keepLeadingWhitespace;
                         }
+
                         keepLeadingWhitespace = null;
                     }
 
                     // Handle addition
-                    else if (!leadingSpaces.ContainsKey(key)) {
-                        if (firstAttribute) {
+                    else if (!_leadingSpaces.ContainsKey(key))
+                    {
+                        if (firstAttribute)
+                        {
                             // This will prevent the textwriter from writing a
                             // newline before the first attribute
-                            leadingSpaces[key] = " ";
+                            _leadingSpaces[key] = " ";
                         }
-                        else if (OneAttributePerLine) {
+                        else if (OneAttributePerLine)
+                        {
                             // Add the indent space between each attribute
-                            leadingSpaces[key] = GetAttributeNewLineString(formatter);
+                            _leadingSpaces[key] = GetAttributeNewLineString(formatter);
                         }
-                        else {
+                        else
+                        {
                             // Don't add any hard-coded spaces. All new attributes
                             // should be at the end, so they'll be formatted while
                             // writing. Make sure we have the right indent string,
@@ -209,71 +322,15 @@ namespace Arbor.Xdt
             }
         }
 
-        private bool ComputeOneAttributePerLine() {
-            if (leadingSpaces.Count > 1) {
-                // If there is a newline between each pair of attributes, then
-                // we'll continue putting newlines between all attributes. If
-                // there's no newline between one pair, then we won't.
-                bool firstAttribute = true;
-                foreach (string attributeName in orderedAttributes) {
-                    // The space in front of the first attribute doesn't count,
-                    // because that space isn't between attributes.
-                    if (firstAttribute) {
-                        firstAttribute = false;
-                    }
-                    else if (leadingSpaces.ContainsKey(attributeName) &&
-                        !ContainsNewLine(leadingSpaces[attributeName])) {
-                        // This means there are two attributes on one line
-                        return false;
-                    }
-                }
+        #region Private data members
 
-                return true;
-            }
-            else {
-                // If there aren't at least two original attributes on this
-                // tag, then it's not possible to tell if more than one would
-                // be on a line. Default to more than one per line.
-                // TODO(jodavis): Should we look at sibling tags to decide?
-                return false;
-            }
-        }
+        private List<string> _orderedAttributes = new List<string>();
+        private Dictionary<string, string> _leadingSpaces = new Dictionary<string, string>();
 
-        private bool ContainsNewLine(string space) {
-            return space.IndexOf("\n", StringComparison.Ordinal) >= 0;
-        }
+        private string _attributeNewLineString;
+        private bool _computedOneAttributePerLine;
+        private bool _oneAttributePerLine;
 
-        public string GetAttributeNewLineString(XmlFormatter formatter) {
-            if (attributeNewLineString == null) {
-                attributeNewLineString = ComputeAttributeNewLineString(formatter);
-            }
-            return attributeNewLineString;
-        }
-
-        private string ComputeAttributeNewLineString(XmlFormatter formatter) {
-            string lookAheadString = LookAheadForNewLineString();
-            if (lookAheadString != null) {
-                return lookAheadString;
-            }
-            else if (formatter != null) {
-                return formatter.CurrentAttributeIndent;
-            }
-            else {
-                return null;
-            }
-        }
-
-        private string LookAheadForNewLineString() {
-            foreach (string space in leadingSpaces.Values) {
-                if (ContainsNewLine(space)) {
-                    return space;
-                }
-            }
-            return null;
-        }
-
-        private void EnsureAttributeNewLineString(XmlFormatter formatter) {
-            GetAttributeNewLineString(formatter);
-        }
+        #endregion
     }
 }

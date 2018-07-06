@@ -1,194 +1,244 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Xml;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.IO;
-using System.Globalization;
+using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace Arbor.Xdt
 {
     internal class XmlElementContext : XmlNodeContext
     {
-        #region private data members
-        private XmlElementContext parentContext;
-        private string xpath = null;
-        private string parentXPath = null;
-        private XmlDocument xmlTargetDoc;
-
-        private IServiceProvider serviceProvider;
-
-        private XmlNode transformNodes = null;
-        private XmlNodeList targetNodes = null;
-        private XmlNodeList targetParents = null;
-
-        private XmlAttribute transformAttribute = null;
-        private XmlAttribute locatorAttribute = null;
-
-        private XmlNamespaceManager namespaceManager = null;
-        #endregion
-
-        public XmlElementContext(XmlElementContext parent, XmlElement element, XmlDocument xmlTargetDoc, IServiceProvider serviceProvider)
-            : base(element) {
-            this.parentContext = parent;
-            this.xmlTargetDoc = xmlTargetDoc;
-            this.serviceProvider = serviceProvider;
+        public XmlElementContext(
+            XmlElementContext parent,
+            XmlElement element,
+            XmlDocument xmlTargetDoc,
+            IServiceProvider serviceProvider)
+            : base(element)
+        {
+            _parentContext = parent;
+            TargetDocument = xmlTargetDoc;
+            this._serviceProvider = serviceProvider;
         }
 
-        public T GetService<T>() where T : class {
-            if (serviceProvider != null) {
-                var service = serviceProvider.GetService(typeof(T)) as T;
+        public T GetService<T>() where T : class
+        {
+            if (_serviceProvider != null)
+            {
+                var service = _serviceProvider.GetService(typeof(T)) as T;
                 // now it is legal to return service that's null -- due to SetTokenizeAttributeStorage
                 //Debug.Assert(service != null, String.Format(CultureInfo.InvariantCulture, "Service provider didn't provide {0}", typeof(ServiceType).Name));
                 return service;
             }
-            else {
-                Debug.Fail("No ServiceProvider");
-                return null;
-            }
+
+            Debug.Fail("No ServiceProvider");
+            return null;
         }
+
+        #region private data members
+
+        private XmlElementContext _parentContext;
+        private string _xpath;
+        private string _parentXPath;
+
+        private IServiceProvider _serviceProvider;
+
+        private XmlNode _transformNodes;
+        private XmlNodeList _targetNodes;
+        private XmlNodeList _targetParents;
+
+        private XmlAttribute _transformAttribute;
+        private XmlAttribute _locatorAttribute;
+
+        private XmlNamespaceManager _namespaceManager;
+
+        #endregion
 
         #region data accessors
+
         public XmlElement Element => Node as XmlElement;
 
-        public string XPath {
-            get {
-                if (xpath == null) {
-                    xpath = ConstructXPath();
+        public string XPath
+        {
+            get
+            {
+                if (_xpath == null)
+                {
+                    _xpath = ConstructXPath();
                 }
-                return xpath;
+
+                return _xpath;
             }
         }
 
-        public string ParentXPath {
-            get {
-                if (parentXPath == null) {
-                    parentXPath = ConstructParentXPath();
+        public string ParentXPath
+        {
+            get
+            {
+                if (_parentXPath == null)
+                {
+                    _parentXPath = ConstructParentXPath();
                 }
-                return parentXPath;
+
+                return _parentXPath;
             }
         }
 
-        public Transform ConstructTransform(out string argumentString) {
-            try {
-                return CreateObjectFromAttribute<Transform>(out argumentString, out transformAttribute);
+        public Transform ConstructTransform(out string argumentString)
+        {
+            try
+            {
+                return CreateObjectFromAttribute<Transform>(out argumentString, out _transformAttribute);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw WrapException(ex);
             }
         }
 
-        public int TransformLineNumber {
-            get {
-                var lineInfo = transformAttribute as IXmlLineInfo;
-                if (lineInfo != null) {
+        public int TransformLineNumber
+        {
+            get
+            {
+                var lineInfo = _transformAttribute as IXmlLineInfo;
+                if (lineInfo != null)
+                {
                     return lineInfo.LineNumber;
                 }
-                else {
-                    return LineNumber;
-                }
+
+                return LineNumber;
             }
         }
 
-        public int TransformLinePosition {
-            get {
-                var lineInfo = transformAttribute as IXmlLineInfo;
-                if (lineInfo != null) {
+        public int TransformLinePosition
+        {
+            get
+            {
+                var lineInfo = _transformAttribute as IXmlLineInfo;
+                if (lineInfo != null)
+                {
                     return lineInfo.LinePosition;
                 }
-                else {
-                    return LinePosition;
-                }
+
+                return LinePosition;
             }
         }
 
-        public XmlAttribute TransformAttribute => transformAttribute;
+        public XmlAttribute TransformAttribute => _transformAttribute;
 
-        public XmlAttribute LocatorAttribute => locatorAttribute;
+        public XmlAttribute LocatorAttribute => _locatorAttribute;
 
         #endregion
 
         #region XPath construction
-        private string ConstructXPath() {
-            try {
+
+        private string ConstructXPath()
+        {
+            try
+            {
                 string argumentString;
-                string parentPath = parentContext == null ? String.Empty : parentContext.XPath;
+                string parentPath = _parentContext == null ? string.Empty : _parentContext.XPath;
 
                 Locator locator = CreateLocator(out argumentString);
 
                 return locator.ConstructPath(parentPath, this, argumentString);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw WrapException(ex);
             }
         }
 
-        private string ConstructParentXPath() {
-            try {
+        private string ConstructParentXPath()
+        {
+            try
+            {
                 string argumentString;
-                string parentPath = parentContext == null ? String.Empty : parentContext.XPath;
+                string parentPath = _parentContext == null ? string.Empty : _parentContext.XPath;
 
                 Locator locator = CreateLocator(out argumentString);
 
                 return locator.ConstructParentPath(parentPath, this, argumentString);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw WrapException(ex);
             }
         }
 
-        private Locator CreateLocator(out string argumentString) {
-            var locator = CreateObjectFromAttribute<Locator>(out argumentString, out locatorAttribute);
-            if (locator == null) {
+        private Locator CreateLocator(out string argumentString)
+        {
+            var locator = CreateObjectFromAttribute<Locator>(out argumentString, out _locatorAttribute);
+            if (locator == null)
+            {
                 argumentString = null;
                 //avoid using singleton of "DefaultLocator.Instance", so unit tests can run parallel
                 locator = new DefaultLocator();
             }
+
             return locator;
         }
+
         #endregion
 
         #region Context information
-        internal XmlNode TransformNode {
-            get {
-                if (transformNodes == null) {
-                    transformNodes = CreateCloneInTargetDocument(Element);
+
+        internal XmlNode TransformNode
+        {
+            get
+            {
+                if (_transformNodes == null)
+                {
+                    _transformNodes = CreateCloneInTargetDocument(Element);
                 }
-                return transformNodes;
+
+                return _transformNodes;
             }
         }
 
-        internal XmlNodeList TargetNodes {
-            get {
-                if (targetNodes == null) {
-                    targetNodes = GetTargetNodes(XPath);
+        internal XmlNodeList TargetNodes
+        {
+            get
+            {
+                if (_targetNodes == null)
+                {
+                    _targetNodes = GetTargetNodes(XPath);
                 }
-                return targetNodes;
+
+                return _targetNodes;
             }
         }
 
-        internal XmlNodeList TargetParents {
-            get {
-                if (targetParents == null && parentContext != null) {
-                    targetParents = GetTargetNodes(ParentXPath);
+        internal XmlNodeList TargetParents
+        {
+            get
+            {
+                if (_targetParents == null && _parentContext != null)
+                {
+                    _targetParents = GetTargetNodes(ParentXPath);
                 }
-                return targetParents;
+
+                return _targetParents;
             }
         }
+
         #endregion
 
         #region Node helpers
-        private XmlDocument TargetDocument => xmlTargetDoc;
 
-        private XmlNode CreateCloneInTargetDocument(XmlNode sourceNode) {
+        private XmlDocument TargetDocument { get; }
+
+        private XmlNode CreateCloneInTargetDocument(XmlNode sourceNode)
+        {
             var infoDocument = TargetDocument as XmlFileInfoDocument;
             XmlNode clonedNode;
-            
-            if (infoDocument != null) {
+
+            if (infoDocument != null)
+            {
                 clonedNode = infoDocument.CloneNodeFromOtherDocument(sourceNode);
             }
-            else {
+            else
+            {
                 XmlReader reader = new XmlTextReader(new StringReader(sourceNode.OuterXml));
                 clonedNode = TargetDocument.ReadNode(reader);
             }
@@ -198,142 +248,183 @@ namespace Arbor.Xdt
             return clonedNode;
         }
 
-        private void ScrubTransformAttributesAndNamespaces(XmlNode node) {
-            if (node.Attributes != null) {
+        private void ScrubTransformAttributesAndNamespaces(XmlNode node)
+        {
+            if (node.Attributes != null)
+            {
                 var attributesToRemove = new List<XmlAttribute>();
-                foreach (XmlAttribute attribute in node.Attributes) {
-                    if (attribute.NamespaceURI == XmlTransformation.TransformNamespace) {
+                foreach (XmlAttribute attribute in node.Attributes)
+                {
+                    if (attribute.NamespaceURI == XmlTransformation.TransformNamespace)
+                    {
                         attributesToRemove.Add(attribute);
                     }
-                    else if (attribute.Prefix.Equals("xmlns") || attribute.Name.Equals("xmlns")) {
+                    else if (attribute.Prefix.Equals("xmlns") || attribute.Name.Equals("xmlns"))
+                    {
                         attributesToRemove.Add(attribute);
                     }
-                    else {
+                    else
+                    {
                         attribute.Prefix = null;
                     }
                 }
-                foreach (XmlAttribute attributeToRemove in attributesToRemove) {
+
+                foreach (XmlAttribute attributeToRemove in attributesToRemove)
+                {
                     node.Attributes.Remove(attributeToRemove);
                 }
             }
 
             // Do the same recursively for child nodes
-            foreach (XmlNode childNode in node.ChildNodes) {
+            foreach (XmlNode childNode in node.ChildNodes)
+            {
                 ScrubTransformAttributesAndNamespaces(childNode);
             }
         }
 
-        private XmlNodeList GetTargetNodes(string xpath) {
+        private XmlNodeList GetTargetNodes(string xpath)
+        {
             XmlNamespaceManager mgr = GetNamespaceManager();
             return TargetDocument.SelectNodes(xpath, GetNamespaceManager());
         }
 
-        private Exception WrapException(Exception ex) {
+        private Exception WrapException(Exception ex)
+        {
             return XmlNodeException.Wrap(ex, Element);
         }
 
-        private Exception WrapException(Exception ex, XmlNode node) {
+        private Exception WrapException(Exception ex, XmlNode node)
+        {
             return XmlNodeException.Wrap(ex, node);
         }
 
-        private XmlNamespaceManager GetNamespaceManager() {
-            if (namespaceManager == null) {
+        private XmlNamespaceManager GetNamespaceManager()
+        {
+            if (_namespaceManager == null)
+            {
                 XmlNodeList localNamespaces = Element.SelectNodes("namespace::*");
 
-                if (localNamespaces.Count > 0) {
-                    namespaceManager = new XmlNamespaceManager(Element.OwnerDocument.NameTable);
+                if (localNamespaces.Count > 0)
+                {
+                    _namespaceManager = new XmlNamespaceManager(Element.OwnerDocument.NameTable);
 
-                    foreach (XmlAttribute nsAttribute in localNamespaces) {
-                        string prefix = String.Empty;
+                    foreach (XmlAttribute nsAttribute in localNamespaces)
+                    {
+                        string prefix = string.Empty;
                         int index = nsAttribute.Name.IndexOf(':');
-                        if (index >= 0) {
+                        if (index >= 0)
+                        {
                             prefix = nsAttribute.Name.Substring(index + 1);
                         }
-                        else {
+                        else
+                        {
                             prefix = "_defaultNamespace";
                         }
 
-                        namespaceManager.AddNamespace(prefix, nsAttribute.Value);
+                        _namespaceManager.AddNamespace(prefix, nsAttribute.Value);
                     }
                 }
-                else {
-                    namespaceManager = new XmlNamespaceManager(GetParentNameTable());
+                else
+                {
+                    _namespaceManager = new XmlNamespaceManager(GetParentNameTable());
                 }
             }
-            return namespaceManager;
+
+            return _namespaceManager;
         }
 
-        private XmlNameTable GetParentNameTable() {
-            if (parentContext == null) {
+        private XmlNameTable GetParentNameTable()
+        {
+            if (_parentContext == null)
+            {
                 return Element.OwnerDocument.NameTable;
             }
-            else {
-                return parentContext.GetNamespaceManager().NameTable;
-            }
+
+            return _parentContext.GetNamespaceManager().NameTable;
         }
+
         #endregion
 
         #region Named object creation
-        private static Regex nameAndArgumentsRegex = null;
-        private Regex NameAndArgumentsRegex {
-            get {
-                if (nameAndArgumentsRegex == null) {
-                    nameAndArgumentsRegex = new Regex(@"\A\s*(?<name>\w+)(\s*\((?<arguments>.*)\))?\s*\Z", RegexOptions.Compiled|RegexOptions.Singleline);
-                }
-                return nameAndArgumentsRegex;
+
+        private static Regex _nameAndArgumentsRegex;
+
+        private static Regex NameAndArgumentsRegex
+        {
+            get
+            {
+                return _nameAndArgumentsRegex ?? (_nameAndArgumentsRegex = new Regex(
+                           @"\A\s*(?<name>\w+)(\s*\((?<arguments>.*)\))?\s*\Z",
+                           RegexOptions.Compiled | RegexOptions.Singleline));
             }
         }
 
-        private string ParseNameAndArguments(string name, out string arguments) {
+        private string ParseNameAndArguments(string name, out string arguments)
+        {
             arguments = null;
 
             System.Text.RegularExpressions.Match match = NameAndArgumentsRegex.Match(name);
-            if (match.Success) {
-                if (match.Groups["arguments"].Success) {
+            if (match.Success)
+            {
+                if (match.Groups["arguments"].Success)
+                {
                     CaptureCollection argumentCaptures = match.Groups["arguments"].Captures;
-                    if (argumentCaptures.Count == 1 && !String.IsNullOrEmpty(argumentCaptures[0].Value)) {
+                    if (argumentCaptures.Count == 1 && !string.IsNullOrEmpty(argumentCaptures[0].Value))
+                    {
                         arguments = argumentCaptures[0].Value;
                     }
                 }
 
                 return match.Groups["name"].Captures[0].Value;
             }
-            else {
-                throw new XmlTransformationException(SR.XMLTRANSFORMATION_BadAttributeValue);
-            }
+
+            throw new XmlTransformationException(SR.XMLTRANSFORMATION_BadAttributeValue);
         }
 
-        private ObjectType CreateObjectFromAttribute<ObjectType>(out string argumentString, out XmlAttribute objectAttribute) where ObjectType : class {
-            objectAttribute = Element.Attributes.GetNamedItem(typeof(ObjectType).Name, XmlTransformation.TransformNamespace) as XmlAttribute;
-            try {
-                if (objectAttribute != null) {
+        private TObjectType CreateObjectFromAttribute<TObjectType>(
+            out string argumentString,
+            out XmlAttribute objectAttribute) where TObjectType : class
+        {
+            objectAttribute =
+                Element.Attributes.GetNamedItem(typeof(TObjectType).Name, XmlTransformation.TransformNamespace) as
+                    XmlAttribute;
+            try
+            {
+                if (objectAttribute != null)
+                {
                     string typeName = ParseNameAndArguments(objectAttribute.Value, out argumentString);
-                    if (!String.IsNullOrEmpty(typeName)) {
+                    if (!string.IsNullOrEmpty(typeName))
+                    {
                         var factory = GetService<NamedTypeFactory>();
-                        return factory.Construct<ObjectType>(typeName);
+                        return factory.Construct<TObjectType>(typeName);
                     }
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw WrapException(ex, objectAttribute);
             }
 
             argumentString = null;
             return null;
         }
+
         #endregion
 
         #region Error reporting helpers
-        internal bool HasTargetNode(out XmlElementContext failedContext, out bool existedInOriginal) {
+
+        internal bool HasTargetNode(out XmlElementContext failedContext, out bool existedInOriginal)
+        {
             failedContext = null;
             existedInOriginal = false;
 
-            if (TargetNodes.Count == 0) {
+            if (TargetNodes.Count == 0)
+            {
                 failedContext = this;
-                while (failedContext.parentContext != null &&
-                    failedContext.parentContext.TargetNodes.Count == 0) {
-
-                    failedContext = failedContext.parentContext;
+                while (failedContext._parentContext != null &&
+                       failedContext._parentContext.TargetNodes.Count == 0)
+                {
+                    failedContext = failedContext._parentContext;
                 }
 
                 existedInOriginal = ExistedInOriginal(failedContext.XPath);
@@ -343,17 +434,19 @@ namespace Arbor.Xdt
             return true;
         }
 
-        internal bool HasTargetParent(out XmlElementContext failedContext, out bool existedInOriginal) {
+        internal bool HasTargetParent(out XmlElementContext failedContext, out bool existedInOriginal)
+        {
             failedContext = null;
             existedInOriginal = false;
 
-            if (TargetParents.Count == 0) {
+            if (TargetParents.Count == 0)
+            {
                 failedContext = this;
-                while (failedContext.parentContext != null &&
-                    !String.IsNullOrEmpty(failedContext.parentContext.ParentXPath) &&
-                    failedContext.parentContext.TargetParents.Count == 0) {
-
-                    failedContext = failedContext.parentContext;
+                while (failedContext._parentContext != null &&
+                       !string.IsNullOrEmpty(failedContext._parentContext.ParentXPath) &&
+                       failedContext._parentContext.TargetParents.Count == 0)
+                {
+                    failedContext = failedContext._parentContext;
                 }
 
                 existedInOriginal = ExistedInOriginal(failedContext.XPath);
@@ -363,17 +456,21 @@ namespace Arbor.Xdt
             return true;
         }
 
-        private bool ExistedInOriginal(string xpath) {
+        private bool ExistedInOriginal(string xpath)
+        {
             var service = GetService<IXmlOriginalDocumentService>();
-            if (service != null) {
+            if (service != null)
+            {
                 XmlNodeList nodeList = service.SelectNodes(xpath, GetNamespaceManager());
-                if (nodeList != null && nodeList.Count > 0) {
+                if (nodeList != null && nodeList.Count > 0)
+                {
                     return true;
                 }
             }
 
             return false;
         }
+
         #endregion
     }
 }

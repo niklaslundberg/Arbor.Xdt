@@ -1,102 +1,123 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Xml;
 using System.Diagnostics;
 using System.Globalization;
+using System.Xml;
 
 namespace Arbor.Xdt
 {
     internal interface IXmlFormattableAttributes
     {
-        void FormatAttributes(XmlFormatter formatter);
-
         string AttributeIndent { get; }
+
+        void FormatAttributes(XmlFormatter formatter);
     }
 
     internal class XmlFormatter
     {
-        private XmlFileInfoDocument document;
-        private string originalFileName;
+        private LinkedList<string> _attributeIndents = new LinkedList<string>();
+        private string _currentAttributeIndent;
+        private string _currentIndent = string.Empty;
+        private XmlNode _currentNode;
+        private XmlFileInfoDocument _document;
 
-        private LinkedList<string> indents = new LinkedList<string>();
-        private LinkedList<string> attributeIndents = new LinkedList<string>();
-        private string currentIndent = String.Empty;
-        private string currentAttributeIndent = null;
-        private string oneTab = null;
-        private string defaultTab = "\t";
-        private XmlNode currentNode = null;
-        private XmlNode previousNode = null;
+        private LinkedList<string> _indents = new LinkedList<string>();
+        private string _oneTab;
+        private string _originalFileName;
 
+        private XmlFormatter(XmlFileInfoDocument document)
+        {
+            this._document = document;
+            _originalFileName = document.FileName;
+        }
 
-        public static void Format(XmlDocument document) {
+        private XmlNode CurrentNode
+        {
+            get => _currentNode;
+            set
+            {
+                PreviousNode = _currentNode;
+                _currentNode = value;
+            }
+        }
+
+        private XmlNode PreviousNode { get; set; }
+
+        private string PreviousIndent
+        {
+            get
+            {
+                Debug.Assert(_indents.Count > 0, "Expected at least one previous indent");
+                return _indents.Last.Value;
+            }
+        }
+
+        private string CurrentIndent
+        {
+            get
+            {
+                if (_currentIndent == null)
+                {
+                    _currentIndent = ComputeCurrentIndent();
+                }
+
+                return _currentIndent;
+            }
+        }
+
+        public string CurrentAttributeIndent
+        {
+            get
+            {
+                if (_currentAttributeIndent == null)
+                {
+                    _currentAttributeIndent = ComputeCurrentAttributeIndent();
+                }
+
+                return _currentAttributeIndent;
+            }
+        }
+
+        private string OneTab
+        {
+            get
+            {
+                if (_oneTab == null)
+                {
+                    _oneTab = ComputeOneTab();
+                }
+
+                return _oneTab;
+            }
+        }
+
+        public string DefaultTab { get; set; } = "\t";
+
+        public static void Format(XmlDocument document)
+        {
             var errorInfoDocument = document as XmlFileInfoDocument;
-            if (errorInfoDocument != null) {
+            if (errorInfoDocument != null)
+            {
                 var formatter = new XmlFormatter(errorInfoDocument);
                 formatter.FormatLoop(errorInfoDocument);
             }
         }
 
-        private XmlFormatter(XmlFileInfoDocument document) {
-            this.document = document;
-            this.originalFileName = document.FileName;
+        public bool IsText(XmlNode node)
+        {
+            return node != null
+                   && node.NodeType == XmlNodeType.Text;
         }
 
-        private XmlNode CurrentNode {
-            get => currentNode;
-            set {
-                previousNode = currentNode;
-                currentNode = value;
-            }
-        }
-
-        private XmlNode PreviousNode => previousNode;
-
-        private string PreviousIndent {
-            get {
-                Debug.Assert(indents.Count > 0, "Expected at least one previous indent");
-                return indents.Last.Value;
-            }
-        }
-
-        private string CurrentIndent {
-            get {
-                if (currentIndent == null) {
-                    currentIndent = ComputeCurrentIndent();
-                }
-                return currentIndent;
-            }
-        }
-
-        public string CurrentAttributeIndent {
-            get {
-                if (currentAttributeIndent == null) {
-                    currentAttributeIndent = ComputeCurrentAttributeIndent();
-                }
-                return currentAttributeIndent;
-            }
-        }
-
-        private string OneTab {
-            get {
-                if (oneTab == null) {
-                    oneTab = ComputeOneTab();
-                }
-                return oneTab;
-            }
-        }
-
-        public string DefaultTab {
-            get => defaultTab;
-            set => defaultTab = value;
-        }
-
-        private void FormatLoop(XmlNode parentNode) {
-            for (int i = 0; i < parentNode.ChildNodes.Count; i++) {
+        private void FormatLoop(XmlNode parentNode)
+        {
+            for (int i = 0; i < parentNode.ChildNodes.Count; i++)
+            {
                 XmlNode node = parentNode.ChildNodes[i];
                 CurrentNode = node;
 
-                switch (node.NodeType) {
+                switch (node.NodeType)
+                {
                     case XmlNodeType.Element:
                         i += HandleElement(node);
                         break;
@@ -116,20 +137,25 @@ namespace Arbor.Xdt
                         // Do nothing
                         break;
                     default:
-                        Debug.Fail(String.Format(CultureInfo.InvariantCulture, "Unexpected element type '{0}' while formatting document", node.NodeType.ToString()));
+                        Debug.Fail(string.Format(CultureInfo.InvariantCulture,
+                            "Unexpected element type '{0}' while formatting document",
+                            node.NodeType.ToString()));
                         break;
                 }
             }
         }
 
-        private void FormatAttributes(XmlNode node) {
+        private void FormatAttributes(XmlNode node)
+        {
             var formattable = node as IXmlFormattableAttributes;
-            if (formattable != null) {
+            if (formattable != null)
+            {
                 formattable.FormatAttributes(this);
             }
         }
 
-        private int HandleElement(XmlNode node) {
+        private int HandleElement(XmlNode node)
+        {
             int indexChange = HandleStartElement(node);
 
             ReorderNewItemsAtEnd(node);
@@ -149,41 +175,48 @@ namespace Arbor.Xdt
         // that whitespace, the whitespace needs to be moved back to the
         // end of the child list, and new whitespaces should be inserted
         // *before* the new nodes.
-        private void ReorderNewItemsAtEnd(XmlNode node) {
+        private void ReorderNewItemsAtEnd(XmlNode node)
+        {
             // If this is a new node, then there couldn't be original
             // whitespace before the end tag
-            if (!IsNewNode(node)) {
-
+            if (!IsNewNode(node))
+            {
                 // If the last child isn't whitespace, new elements might
                 // have been added
                 XmlNode iter = node.LastChild;
-                if (iter != null && iter.NodeType != XmlNodeType.Whitespace) {
-
+                if (iter != null && iter.NodeType != XmlNodeType.Whitespace)
+                {
                     // The loop continues until we find something that isn't
                     // a new Element. If it's whitespace, then that will be
                     // the whitespace we need to move.
                     XmlNode whitespace = null;
-                    while (iter != null) {
-                        switch (iter.NodeType) {
+                    while (iter != null)
+                    {
+                        switch (iter.NodeType)
+                        {
                             case XmlNodeType.Whitespace:
                                 // Found the whitespace, loop can stop
                                 whitespace = iter;
                                 break;
                             case XmlNodeType.Element:
                                 // Loop continues over new Elements
-                                if (IsNewNode(iter)) {
+                                if (IsNewNode(iter))
+                                {
                                     iter = iter.PreviousSibling;
                                     continue;
                                 }
+
                                 break;
                             default:
                                 // Anything else stops the loop
                                 break;
                         }
+
                         break;
                     }
 
-                    if (whitespace != null) {
+                    if (whitespace != null)
+                    {
                         // We found whitespace to move. Remove it from where
                         // it is and add it back to the end
                         node.RemoveChild(whitespace);
@@ -193,7 +226,8 @@ namespace Arbor.Xdt
             }
         }
 
-        private int HandleStartElement(XmlNode node) {
+        private int HandleStartElement(XmlNode node)
+        {
             int indexChange = EnsureNodeIndent(node, false);
 
             FormatAttributes(node);
@@ -203,19 +237,22 @@ namespace Arbor.Xdt
             return indexChange;
         }
 
-        private int HandleEndElement(XmlNode node) {
+        private int HandleEndElement(XmlNode node)
+        {
             int indexChange = 0;
 
             PopIndent();
 
-            if (!((XmlElement)node).IsEmpty) {
+            if (!((XmlElement)node).IsEmpty)
+            {
                 indexChange = EnsureNodeIndent(node, true);
             }
 
             return indexChange;
         }
 
-        private int HandleWhiteSpace(XmlNode node) {
+        private int HandleWhiteSpace(XmlNode node)
+        {
             int indexChange = 0;
 
             // If we find two WhiteSpace nodes in a row, it means some node
@@ -228,7 +265,8 @@ namespace Arbor.Xdt
                 // and 'node' doesn't, keep the whitespace with the newline
                 XmlNode removeNode = PreviousNode;
                 if (FindLastNewLine(node.OuterXml) < 0 &&
-                    FindLastNewLine(PreviousNode.OuterXml) >= 0) {
+                    FindLastNewLine(PreviousNode.OuterXml) >= 0)
+                {
                     removeNode = node;
                 }
 
@@ -237,21 +275,26 @@ namespace Arbor.Xdt
             }
 
             string indent = GetIndentFromWhiteSpace(node);
-            if (indent != null) {
+            if (indent != null)
+            {
                 SetIndent(indent);
             }
 
             return indexChange;
         }
 
-        private int EnsureNodeIndent(XmlNode node, bool indentBeforeEnd) {
+        private int EnsureNodeIndent(XmlNode node, bool indentBeforeEnd)
+        {
             int indexChange = 0;
 
-            if (NeedsIndent(node, PreviousNode)) {
-                if (indentBeforeEnd) {
+            if (NeedsIndent(node, PreviousNode))
+            {
+                if (indentBeforeEnd)
+                {
                     InsertIndentBeforeEnd(node);
                 }
-                else {
+                else
+                {
                     InsertIndentBefore(node);
                     indexChange = 1;
                 }
@@ -260,29 +303,35 @@ namespace Arbor.Xdt
             return indexChange;
         }
 
-        private string GetIndentFromWhiteSpace(XmlNode node) {
+        private string GetIndentFromWhiteSpace(XmlNode node)
+        {
             string whitespace = node.OuterXml;
             int index = FindLastNewLine(whitespace);
-            if (index >= 0) {
+            if (index >= 0)
+            {
                 return whitespace.Substring(index);
             }
-            else {
-                // If there's no newline, then this is whitespace in the
-                // middle of a line, not an indent
-                return null;
-            }
+
+            // If there's no newline, then this is whitespace in the
+            // middle of a line, not an indent
+            return null;
         }
 
-        private int FindLastNewLine(string whitespace) {
-            for (int i = whitespace.Length - 1; i >= 0; i--) {
-                switch (whitespace[i]) {
+        private int FindLastNewLine(string whitespace)
+        {
+            for (int i = whitespace.Length - 1; i >= 0; i--)
+            {
+                switch (whitespace[i])
+                {
                     case '\r':
                         return i;
                     case '\n':
-                        if (i > 0 && whitespace[i - 1] == '\r') {
+                        if (i > 0 && whitespace[i - 1] == '\r')
+                        {
                             return i - 1;
                         }
-                        else {
+                        else
+                        {
                             return i;
                         }
                     case ' ':
@@ -298,95 +347,106 @@ namespace Arbor.Xdt
             return -1;
         }
 
-        private void SetIndent(string indent) {
-            if (currentIndent == null || !currentIndent.Equals(indent)) {
-                currentIndent = indent;
+        private void SetIndent(string indent)
+        {
+            if (_currentIndent == null || !_currentIndent.Equals(indent))
+            {
+                _currentIndent = indent;
 
                 // These strings will be determined on demand
-                oneTab = null;
-                currentAttributeIndent = null;
+                _oneTab = null;
+                _currentAttributeIndent = null;
             }
         }
 
-        private void PushIndent() {
-            indents.AddLast(new LinkedListNode<string>(CurrentIndent));
+        private void PushIndent()
+        {
+            _indents.AddLast(new LinkedListNode<string>(CurrentIndent));
 
             // The next indent will be determined on demand, assuming
             // we don't find one before it's needed
-            currentIndent = null;
+            _currentIndent = null;
 
             // Don't use the property accessor to push the attribute
             // indent. These aren't always needed, so we don't compute
             // them until necessary. Also, we don't walk through this
             // stack like we do the indents stack.
-            attributeIndents.AddLast(new LinkedListNode<string>(currentAttributeIndent));
-            currentAttributeIndent = null;
+            _attributeIndents.AddLast(new LinkedListNode<string>(_currentAttributeIndent));
+            _currentAttributeIndent = null;
         }
 
-        private void PopIndent() {
-            if (indents.Count > 0) {
-                currentIndent = indents.Last.Value;
-                indents.RemoveLast();
+        private void PopIndent()
+        {
+            if (_indents.Count > 0)
+            {
+                _currentIndent = _indents.Last.Value;
+                _indents.RemoveLast();
 
-                currentAttributeIndent = attributeIndents.Last.Value;
-                attributeIndents.RemoveLast();
+                _currentAttributeIndent = _attributeIndents.Last.Value;
+                _attributeIndents.RemoveLast();
             }
-            else {
+            else
+            {
                 Debug.Fail("Popped too many indents");
                 throw new InvalidOperationException();
             }
         }
 
-        private bool NeedsIndent(XmlNode node, XmlNode previousNode) {
+        private bool NeedsIndent(XmlNode node, XmlNode previousNode)
+        {
             return !IsWhiteSpace(previousNode)
-                && !IsText(previousNode)
-                && (IsNewNode(node) || IsNewNode(previousNode));
+                   && !IsText(previousNode)
+                   && (IsNewNode(node) || IsNewNode(previousNode));
         }
 
-        private bool IsWhiteSpace(XmlNode node) {
+        private bool IsWhiteSpace(XmlNode node)
+        {
             return node != null
-                && node.NodeType == XmlNodeType.Whitespace;
+                   && node.NodeType == XmlNodeType.Whitespace;
         }
 
-        public bool IsText(XmlNode node) {
+        private bool IsNewNode(XmlNode node)
+        {
             return node != null
-                && node.NodeType == XmlNodeType.Text;
+                   && _document.IsNewNode(node);
         }
 
-        private bool IsNewNode(XmlNode node) {
-            return node != null
-                && document.IsNewNode(node);
+        private void InsertIndentBefore(XmlNode node)
+        {
+            node.ParentNode.InsertBefore(_document.CreateWhitespace(CurrentIndent), node);
         }
 
-        private void InsertIndentBefore(XmlNode node) {
-            node.ParentNode.InsertBefore(document.CreateWhitespace(CurrentIndent), node);
+        private void InsertIndentBeforeEnd(XmlNode node)
+        {
+            node.AppendChild(_document.CreateWhitespace(CurrentIndent));
         }
 
-        private void InsertIndentBeforeEnd(XmlNode node) {
-            node.AppendChild(document.CreateWhitespace(CurrentIndent));
-        }
-
-        private string ComputeCurrentIndent() {
+        private string ComputeCurrentIndent()
+        {
             string lookAheadIndent = LookAheadForIndent();
-            if (lookAheadIndent != null) {
+            if (lookAheadIndent != null)
+            {
                 return lookAheadIndent;
             }
-            else {
-                return PreviousIndent + OneTab;
-            }
+
+            return PreviousIndent + OneTab;
         }
 
-        private string LookAheadForIndent() {
-            if (currentNode.ParentNode == null) {
+        private string LookAheadForIndent()
+        {
+            if (_currentNode.ParentNode == null)
+            {
                 return null;
             }
 
-            foreach (XmlNode siblingNode in currentNode.ParentNode.ChildNodes) {
+            foreach (XmlNode siblingNode in _currentNode.ParentNode.ChildNodes)
+            {
                 if (IsWhiteSpace(siblingNode) && siblingNode.NextSibling != null)
                 {
                     string whitespace = siblingNode.OuterXml;
                     int index = FindLastNewLine(whitespace);
-                    if (index >= 0) {
+                    if (index >= 0)
+                    {
                         return whitespace.Substring(index);
                     }
                 }
@@ -395,19 +455,23 @@ namespace Arbor.Xdt
             return null;
         }
 
-        private string ComputeOneTab() {
-            Debug.Assert(indents.Count > 0, "Expected at least one previous indent");
-            if (indents.Count < 0) {
+        private string ComputeOneTab()
+        {
+            Debug.Assert(_indents.Count > 0, "Expected at least one previous indent");
+            if (_indents.Count <= 0)
+            {
                 return DefaultTab;
             }
 
-            LinkedListNode<string> currentIndentNode = indents.Last;
+            LinkedListNode<string> currentIndentNode = _indents.Last;
             LinkedListNode<string> previousIndentNode = currentIndentNode.Previous;
 
-            while (previousIndentNode != null) {
+            while (previousIndentNode != null)
+            {
                 // If we can determine the difference between the current indent
                 // and the previous one, then that's the value of one tab
-                if (currentIndentNode.Value.StartsWith(previousIndentNode.Value, StringComparison.Ordinal)) {
+                if (currentIndentNode.Value.StartsWith(previousIndentNode.Value, StringComparison.Ordinal))
+                {
                     return currentIndentNode.Value.Substring(previousIndentNode.Value.Length);
                 }
 
@@ -418,9 +482,12 @@ namespace Arbor.Xdt
             return ConvertIndentToTab(currentIndentNode.Value);
         }
 
-        private string ConvertIndentToTab(string indent) {
-            for (int index = 0; index < indent.Length - 1; index++) {
-                switch (indent[index]) {
+        private string ConvertIndentToTab(string indent)
+        {
+            for (int index = 0; index < indent.Length - 1; index++)
+            {
+                switch (indent[index])
+                {
                     case '\r':
                     case '\n':
                         break;
@@ -434,32 +501,39 @@ namespace Arbor.Xdt
             return DefaultTab;
         }
 
-        private string ComputeCurrentAttributeIndent() {
+        private string ComputeCurrentAttributeIndent()
+        {
             string siblingIndent = LookForSiblingIndent(CurrentNode);
-            if (siblingIndent != null) {
+            if (siblingIndent != null)
+            {
                 return siblingIndent;
             }
-            else {
-                return CurrentIndent + OneTab;
-            }
+
+            return CurrentIndent + OneTab;
         }
 
-        private string LookForSiblingIndent(XmlNode currentNode) {
+        private static string LookForSiblingIndent(XmlNode currentNode)
+        {
             bool beforeCurrentNode = true;
             string foundIndent = null;
 
-            foreach (XmlNode node in currentNode.ParentNode.ChildNodes) {
-                if (node == currentNode) {
+            foreach (XmlNode node in currentNode.ParentNode.ChildNodes)
+            {
+                if (node == currentNode)
+                {
                     beforeCurrentNode = false;
                 }
-                else {
+                else
+                {
                     var formattable = node as IXmlFormattableAttributes;
-                    if (formattable != null) {
+                    if (formattable != null)
+                    {
                         foundIndent = formattable.AttributeIndent;
                     }
                 }
 
-                if (!beforeCurrentNode && foundIndent != null) {
+                if (!beforeCurrentNode && foundIndent != null)
+                {
                     return foundIndent;
                 }
             }
