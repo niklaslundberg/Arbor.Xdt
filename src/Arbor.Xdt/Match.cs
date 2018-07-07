@@ -1,18 +1,8 @@
-using System;
 using System.Globalization;
 using System.Xml;
 
 namespace Arbor.Xdt
 {
-    internal sealed class DefaultLocator : Locator
-    {
-        // Uses all the default behavior
-
-        private static DefaultLocator _instance;
-
-        internal static DefaultLocator Instance => _instance ?? (_instance = new DefaultLocator());
-    }
-
     public sealed class Match : Locator
     {
         protected override string ConstructPredicate()
@@ -47,37 +37,6 @@ namespace Arbor.Xdt
             }
 
             return keyPredicate;
-        }
-    }
-
-    public sealed class Condition : Locator
-    {
-        protected override string ConstructPredicate()
-        {
-            EnsureArguments(1, 1);
-
-            return Arguments[0];
-        }
-    }
-
-    public sealed class XPath : Locator
-    {
-        protected override string ParentPath => ConstructPath();
-
-        protected override string ConstructPath()
-        {
-            EnsureArguments(1, 1);
-
-            string xpath = Arguments[0];
-            if (!xpath.StartsWith("/", StringComparison.Ordinal))
-            {
-                // Relative XPath
-                xpath = AppendStep(base.ParentPath, NextStepNodeTest);
-                xpath = AppendStep(xpath, Arguments[0]);
-                xpath = xpath.Replace("/./", "/");
-            }
-
-            return xpath;
         }
     }
 }

@@ -90,9 +90,7 @@ namespace Arbor.Xdt
                     }
                     else
                     {
-                        var textWriter =
-                            new XmlTextWriter(fileStream, TextEncoding) { Formatting = Formatting.Indented };
-                        xmlWriter = textWriter;
+                        xmlWriter = new XmlTextWriter(fileStream, TextEncoding) { Formatting = Formatting.Indented };
                     }
 
                     WriteTo(xmlWriter);
@@ -102,7 +100,9 @@ namespace Arbor.Xdt
                     if (xmlWriter != null)
                     {
                         xmlWriter.Flush();
+                        xmlWriter.Close();
                         xmlWriter.Dispose();
+                        xmlWriter = null;
                     }
                 }
             }
@@ -121,8 +121,7 @@ namespace Arbor.Xdt
                 }
                 else
                 {
-                    var textWriter = new XmlTextWriter(outStream, TextEncoding) { Formatting = Formatting.Indented };
-                    xmlWriter = textWriter;
+                    xmlWriter = new XmlTextWriter(outStream, TextEncoding) { Formatting = Formatting.Indented };
                 }
 
                 WriteTo(xmlWriter);
@@ -132,7 +131,9 @@ namespace Arbor.Xdt
                 if (xmlWriter != null)
                 {
                     xmlWriter.Flush();
+                    xmlWriter.Close();
                     xmlWriter.Dispose();
+                    xmlWriter = null;
                 }
             }
         }
@@ -162,6 +163,7 @@ namespace Arbor.Xdt
             FileName = filename;
 
             StreamReader reader = null;
+
             try
             {
                 if (PreserveWhitespace)
@@ -170,6 +172,7 @@ namespace Arbor.Xdt
                 }
 
                 reader = new StreamReader(filename, true);
+
                 LoadFromTextReader(reader);
             }
             finally

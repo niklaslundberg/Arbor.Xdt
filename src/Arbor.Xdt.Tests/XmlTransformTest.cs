@@ -56,6 +56,21 @@ namespace Arbor.Xdt.Tests
         }
 
         [TestMethod]
+        public void XmlTransform_ReplaceAttribute()
+        {
+            string src = Path.Combine(VcsTestPathHelper.FindVcsRootPath(), "src", "Arbor.Xdt.Tests", "Resources", "Example", "Web.Config");
+
+            string transform = Path.Combine(VcsTestPathHelper.FindVcsRootPath(), "src", "Arbor.Xdt.Tests", "Resources", "Example", "Web.Release.Config");
+
+            string destination = Path.Combine(VcsTestPathHelper.FindVcsRootPath(), "src", "Arbor.Xdt.Tests", "Resources", "Example", "Web.Result.Config");
+
+            Transform_TestRunner_ExpectSuccess(File.ReadAllText(src),
+                File.ReadAllText(transform),
+                File.ReadAllText(destination),
+                "");
+        }
+
+        [TestMethod]
         public void XmlTransform_AttibuteFormatting()
         {
             Transform_TestRunner_ExpectSuccess(Resources.AttributeFormating_source,
@@ -122,7 +137,10 @@ namespace Arbor.Xdt.Tests
             //test
             Assert.AreEqual(true, succeed);
             CompareFiles(destFile, baselineFile);
-            CompareMultiLines(expectedLog, logger.LogText);
+            if (!string.IsNullOrWhiteSpace(expectedLog))
+            {
+                CompareMultiLines(expectedLog, logger.LogText);
+            }
         }
 
         private void Transform_TestRunner_ExpectFail(string source, string transform, string expectedLog)

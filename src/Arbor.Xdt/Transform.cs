@@ -6,22 +6,6 @@ using System.Xml;
 
 namespace Arbor.Xdt
 {
-    public enum MissingTargetMessage
-    {
-        None,
-        Information,
-        Warning,
-        Error
-    }
-
-    [Flags]
-    public enum TransformFlags
-    {
-        None = 0,
-        ApplyTransformToAllTargetNodes = 1,
-        UseParentAsTargetNode = 2
-    }
-
     public abstract class Transform
     {
         protected Transform()
@@ -89,6 +73,7 @@ namespace Arbor.Xdt
                 if (_logger == null)
                 {
                     _logger = _context.GetService<XmlTransformationLogger>();
+
                     if (_logger != null)
                     {
                         _logger.CurrentReferenceNode = _context.TransformAttribute;
@@ -210,8 +195,8 @@ namespace Arbor.Xdt
 
         private bool HasRequiredTarget()
         {
-            bool hasRequiredTarget = false;
-            bool existedInOriginal = false;
+            bool hasRequiredTarget;
+            bool existedInOriginal;
             XmlElementContext matchFailureContext;
 
             if (UseParentAsTargetNode)
@@ -295,6 +280,7 @@ namespace Arbor.Xdt
                 catch (Exception ex)
                 {
                     error = true;
+
                     if (context.TransformAttribute != null)
                     {
                         Log.LogErrorFromException(XmlNodeException.Wrap(ex, context.TransformAttribute));

@@ -2,12 +2,6 @@ using System;
 
 namespace Arbor.Xdt
 {
-    public enum MessageType
-    {
-        Normal,
-        Verbose
-    }
-
     public interface IXmlTransformationLogger
     {
         void LogMessage(string message, params object[] messageArgs);

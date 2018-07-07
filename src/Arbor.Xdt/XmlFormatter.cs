@@ -6,13 +6,6 @@ using System.Xml;
 
 namespace Arbor.Xdt
 {
-    internal interface IXmlFormattableAttributes
-    {
-        string AttributeIndent { get; }
-
-        void FormatAttributes(XmlFormatter formatter);
-    }
-
     internal sealed class XmlFormatter
     {
         private readonly LinkedList<string> _attributeIndents = new LinkedList<string>();
