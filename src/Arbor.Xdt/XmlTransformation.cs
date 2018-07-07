@@ -29,6 +29,7 @@ namespace Arbor.Xdt
             _logger = new XmlTransformationLogger(logger);
 
             _xmlTransformation = new XmlFileInfoDocument();
+
             if (isTransformAFile)
             {
                 _xmlTransformation.Load(transform);
