@@ -1,6 +1,6 @@
 @ECHO OFF
 SET Arbor.X.MSBuild.NuGetRestore.Enabled=true
 SET Arbor.X.NuGet.Package.Artifacts.CreateOnAnyBranchEnabled=true
-CALL arbor-build
+CALL dotnet arbor-build
 
 EXIT /B %ERRORLEVEL%
